@@ -2,7 +2,7 @@
   <div class="layout">
     <nav class="navbar">
       <div class="nav-brand">
-        <h2>Gemini Proxy</h2>
+        <h2>Tjimi Proxy</h2>
       </div>
       
       <div class="nav-links">

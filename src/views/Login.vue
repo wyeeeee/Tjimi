@@ -1,40 +1,80 @@
 <template>
-  <div class="login-container">
-    <div class="login-card">
-      <div class="login-header">
-        <h2>系统登录</h2>
-        <p class="login-subtitle">Gemini API 管理系统</p>
+  <div class="login-page">
+    <div class="login-container">
+      <!-- Background Elements -->
+      <div class="login-background">
+        <div class="bg-gradient"></div>
+        <div class="bg-pattern"></div>
       </div>
-      
-      <form @submit.prevent="handleSubmit">
-        <div class="form-group">
-          <label for="password">请输入密码</label>
-          <input
-            id="password"
+
+      <!-- Login Form -->
+      <Card class="login-card" variant="elevated">
+        <template #header>
+          <div class="login-header">
+            <div class="brand-section">
+              <div class="brand-icon">
+                <Icon name="key" size="48" color="var(--color-primary)" />
+              </div>
+              <div class="brand-info">
+                <h1 class="brand-title">Tjimi Proxy</h1>
+                <p class="brand-subtitle">API 管理系统</p>
+              </div>
+            </div>
+            <h2 class="login-title">系统登录</h2>
+            <p class="login-description">请输入密码以访问管理面板</p>
+          </div>
+        </template>
+
+        <form @submit.prevent="handleSubmit" class="login-form">
+          <Input
             v-model="password"
             type="password"
-            required
+            label="密码"
             placeholder="默认密码: admin123"
-            class="password-input"
+            prefix-icon="key"
+            :error="authStore.error"
+            :loading="authStore.loading"
+            required
+            autofocus
+            size="lg"
           />
-        </div>
-        
-        <button type="submit" :disabled="authStore.loading" class="login-btn">
-          {{ authStore.loading ? '登录中...' : '登录' }}
-        </button>
-        
-        <div v-if="authStore.error" class="error">
-          {{ authStore.error }}
-        </div>
-      </form>
-      
-      <div v-if="authStore.isDefaultPassword && authStore.isAuthenticated" class="default-password-warning">
-        <div class="warning-icon">⚠️</div>
-        <div class="warning-text">
-          <p>您正在使用默认密码</p>
-          <p>建议尽快在设置中修改密码</p>
-        </div>
-      </div>
+
+          <Button
+            type="submit"
+            variant="primary"
+            size="lg"
+            :loading="authStore.loading"
+            full-width
+            class="login-button"
+          >
+            {{ authStore.loading ? '登录中...' : '登录系统' }}
+          </Button>
+        </form>
+
+        <template #footer>
+          <div class="login-footer">
+            <div class="default-password-hint">
+              <Icon name="info" size="16" />
+              <span>首次登录请使用默认密码：<code>admin123</code></span>
+            </div>
+            
+            <div class="login-features">
+              <div class="feature-item">
+                <Icon name="check" size="16" />
+                <span>API 密钥管理</span>
+              </div>
+              <div class="feature-item">
+                <Icon name="check" size="16" />
+                <span>请求日志监控</span>
+              </div>
+              <div class="feature-item">
+                <Icon name="check" size="16" />
+                <span>安全认证</span>
+              </div>
+            </div>
+          </div>
+        </template>
+      </Card>
     </div>
   </div>
 </template>
@@ -43,6 +83,10 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import Card from '../components/ui/Card.vue'
+import Input from '../components/ui/Input.vue'
+import Button from '../components/ui/Button.vue'
+import Icon from '../components/ui/Icon.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -53,203 +97,320 @@ const handleSubmit = async () => {
   const success = await authStore.login(password.value)
   
   if (success) {
-    router.push('/')
+    await router.push('/')
   }
 }
 </script>
 
 <style scoped>
-.login-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
+.login-page {
   min-height: 100vh;
-  padding: 20px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-4);
+  position: relative;
+  overflow: hidden;
 }
 
-.login-card {
-  background: white;
-  padding: 50px 40px;
-  border-radius: 16px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+.login-container {
+  position: relative;
+  z-index: 2;
   width: 100%;
-  max-width: 420px;
-  backdrop-filter: blur(10px);
+  max-width: 480px;
 }
 
+/* Background */
+.login-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: -1;
+}
+
+.bg-gradient {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, 
+    var(--color-primary) 0%, 
+    var(--color-secondary) 50%, 
+    var(--color-primary) 100%);
+  opacity: 0.9;
+}
+
+.bg-pattern {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.1) 2px, transparent 2px),
+    radial-gradient(circle at 75% 75%, rgba(255, 255, 255, 0.1) 2px, transparent 2px);
+  background-size: 50px 50px;
+  background-position: 0 0, 25px 25px;
+  opacity: 0.3;
+  animation: float 20s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-20px) rotate(1deg); }
+}
+
+/* Login Card */
+.login-card {
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 
+    0 25px 50px -12px rgba(0, 0, 0, 0.25),
+    0 0 0 1px rgba(255, 255, 255, 0.1);
+  animation: slideInUp 0.6s ease-out;
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(2rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Header */
 .login-header {
   text-align: center;
-  margin-bottom: 40px;
 }
 
-.login-header h2 {
-  color: #2c3e50;
-  font-size: 28px;
-  font-weight: 600;
-  margin-bottom: 8px;
-}
-
-.login-subtitle {
-  color: #7f8c8d;
-  font-size: 14px;
-  margin: 0;
-}
-
-.form-group {
-  margin-bottom: 24px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 8px;
-  color: #2c3e50;
-  font-weight: 500;
-  font-size: 14px;
-}
-
-.password-input {
-  width: 100%;
-  padding: 16px;
-  border: 2px solid #e1e8ed;
-  border-radius: 8px;
-  font-size: 16px;
-  transition: all 0.3s ease;
-  background: #f8f9fa;
-}
-
-.password-input:focus {
-  outline: none;
-  border-color: #667eea;
-  background: white;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-}
-
-.login-btn {
-  width: 100%;
-  padding: 16px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  margin-bottom: 16px;
-}
-
-.login-btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
-}
-
-.login-btn:disabled {
-  background: #bdc3c7;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-
-.error {
-  color: #e74c3c;
-  margin-top: 16px;
-  text-align: center;
-  font-size: 14px;
-  padding: 12px;
-  background: #fdf2f2;
-  border-radius: 6px;
-  border-left: 4px solid #e74c3c;
-}
-
-.default-password-warning {
-  margin-top: 20px;
-  padding: 16px;
-  background: #fff3cd;
-  border: 1px solid #ffeaa7;
-  border-radius: 8px;
+.brand-section {
   display: flex;
-  align-items: flex-start;
-  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-4);
+  margin-bottom: var(--spacing-6);
 }
 
-.warning-icon {
-  font-size: 20px;
-  flex-shrink: 0;
+.brand-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.2) 0%, 
+    rgba(255, 255, 255, 0.1) 100%);
+  border-radius: var(--radius-2xl);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  animation: pulse 2s ease-in-out infinite;
 }
 
-.warning-text {
-  flex: 1;
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
 }
 
-.warning-text p {
+.brand-info {
+  text-align: left;
+}
+
+.brand-title {
+  font-size: var(--text-3xl);
+  font-weight: var(--font-bold);
   margin: 0;
-  font-size: 13px;
-  color: #856404;
-  line-height: 1.4;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
-.warning-text p:first-child {
-  font-weight: 600;
-  margin-bottom: 4px;
+.brand-subtitle {
+  font-size: var(--text-base);
+  color: var(--color-text-secondary);
+  margin: 0;
+  opacity: 0.8;
 }
 
+.login-title {
+  font-size: var(--text-2xl);
+  font-weight: var(--font-semibold);
+  margin: 0 0 var(--spacing-2) 0;
+  color: var(--color-text);
+}
+
+.login-description {
+  font-size: var(--text-base);
+  color: var(--color-text-secondary);
+  margin: 0;
+  opacity: 0.8;
+}
+
+/* Form */
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-6);
+  margin-top: var(--spacing-8);
+}
+
+.login-button {
+  margin-top: var(--spacing-2);
+}
+
+/* Footer */
+.login-footer {
+  text-align: center;
+  margin-top: var(--spacing-6);
+}
+
+.default-password-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-3);
+  background-color: rgba(var(--color-info-rgb), 0.1);
+  border: 1px solid rgba(var(--color-info-rgb), 0.2);
+  border-radius: var(--radius-lg);
+  font-size: var(--text-sm);
+  color: var(--color-info);
+  margin-bottom: var(--spacing-6);
+}
+
+.default-password-hint code {
+  background-color: rgba(var(--color-info-rgb), 0.2);
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 0.875em;
+}
+
+.login-features {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+}
+
+.feature-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-2);
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  opacity: 0.8;
+}
+
+.feature-item :deep(.icon) {
+  color: var(--color-success);
+}
+
+/* Mobile Responsive */
+@media (max-width: 640px) {
+  .login-page {
+    padding: var(--spacing-4);
+  }
+  
+  .brand-section {
+    flex-direction: column;
+    gap: var(--spacing-3);
+  }
+  
+  .brand-icon {
+    width: 64px;
+    height: 64px;
+  }
+  
+  .brand-info {
+    text-align: center;
+  }
+  
+  .brand-title {
+    font-size: var(--text-2xl);
+  }
+  
+  .login-title {
+    font-size: var(--text-xl);
+  }
+  
+  .login-features {
+    gap: var(--spacing-2);
+  }
+  
+  .feature-item {
+    font-size: var(--text-xs);
+  }
+}
+
+/* Landscape mobile */
+@media (max-height: 640px) and (orientation: landscape) {
+  .login-page {
+    padding: var(--spacing-2);
+  }
+  
+  .brand-section {
+    flex-direction: row;
+    gap: var(--spacing-3);
+    margin-bottom: var(--spacing-4);
+  }
+  
+  .brand-icon {
+    width: 48px;
+    height: 48px;
+  }
+  
+  .login-form {
+    gap: var(--spacing-4);
+    margin-top: var(--spacing-4);
+  }
+  
+  .login-footer {
+    margin-top: var(--spacing-4);
+  }
+  
+  .login-features {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--spacing-4);
+  }
+}
+
+/* Dark mode enhancements */
 @media (prefers-color-scheme: dark) {
+  .bg-gradient {
+    background: linear-gradient(135deg, 
+      #1a1a2e 0%, 
+      #16213e 50%, 
+      #0f3460 100%);
+  }
+  
   .login-card {
-    background: #2c3e50;
-    color: #ecf0f1;
+    background-color: rgba(0, 0, 0, 0.3);
+    border-color: rgba(255, 255, 255, 0.1);
   }
   
-  .login-header h2 {
-    color: #ecf0f1;
-  }
-  
-  .login-subtitle {
-    color: #95a5a6;
-  }
-  
-  .form-group label {
-    color: #bdc3c7;
-  }
-  
-  .password-input {
-    background: #34495e;
-    border-color: #4a5f7a;
-    color: #ecf0f1;
-  }
-  
-  .password-input:focus {
-    border-color: #667eea;
-    background: #34495e;
-  }
-  
-  .error {
-    background: #2c1810;
-    color: #f1c40f;
-    border-left-color: #f39c12;
-  }
-  
-  .default-password-warning {
-    background: #2c2416;
-    border-color: #f39c12;
-  }
-  
-  .warning-text p {
-    color: #f39c12;
+  .brand-icon {
+    background: linear-gradient(135deg, 
+      rgba(255, 255, 255, 0.1) 0%, 
+      rgba(255, 255, 255, 0.05) 100%);
+    border-color: rgba(255, 255, 255, 0.1);
   }
 }
 
-@media (max-width: 480px) {
-  .login-container {
-    padding: 16px;
-  }
-  
-  .login-card {
-    padding: 32px 24px;
-  }
-  
-  .login-header h2 {
-    font-size: 24px;
+/* Reduce motion */
+@media (prefers-reduced-motion: reduce) {
+  .login-card,
+  .brand-icon,
+  .bg-pattern {
+    animation: none;
   }
 }
 </style>
