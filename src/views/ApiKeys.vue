@@ -1,126 +1,257 @@
 <template>
-  <div class="api-keys">
-    <div class="header">
-      <h1>API 密钥管理</h1>
-      <button @click="showAddDialog = true" class="add-btn">
-        添加新密钥
-      </button>
-    </div>
-
-    <div v-if="apiKeysStore.loading" class="loading">
-      加载中...
-    </div>
-
-    <div v-if="apiKeysStore.error" class="error">
-      {{ apiKeysStore.error }}
-    </div>
-
-    <div class="keys-grid">
-      <div 
-        v-for="key in apiKeysStore.keys" 
-        :key="key.id"
-        class="key-card"
-        :class="{ inactive: !key.isActive }"
+  <div class="api-keys-page">
+    <div class="page-header">
+      <div class="header-content">
+        <h1 class="page-title">API 密钥管理</h1>
+        <p class="page-description">管理 Gemini API 密钥，支持批量添加和轮换负载均衡</p>
+      </div>
+      <Button
+        variant="primary"
+        icon="add"
+        @click="showAddDialog = true"
+        size="lg"
+        class="add-button"
       >
-        <div class="key-header">
-          <h3>{{ getKeyDisplayName(key.keyValue) }}</h3>
-          <div class="key-status">
-            <span :class="{ active: key.isActive, inactive: !key.isActive }">
-              {{ key.isActive ? '活跃' : '禁用' }}
-            </span>
+        添加新密钥
+      </Button>
+    </div>
+
+    <!-- Loading State -->
+    <div v-if="apiKeysStore.loading && apiKeysStore.keys.length === 0" class="loading-state">
+      <Card class="loading-card">
+        <div class="loading-content">
+          <Icon name="loading" size="32" />
+          <h3>加载中...</h3>
+          <p>正在获取 API 密钥列表</p>
+        </div>
+      </Card>
+    </div>
+
+    <!-- Error State -->
+    <Card v-if="apiKeysStore.error" variant="danger" class="error-card">
+      <div class="error-content">
+        <Icon name="error" size="24" />
+        <div class="error-text">
+          <h3>加载失败</h3>
+          <p>{{ apiKeysStore.error }}</p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          @click="apiKeysStore.fetchApiKeys()"
+          icon="refresh"
+        >
+          重试
+        </Button>
+      </div>
+    </Card>
+
+    <!-- Keys Grid -->
+    <div v-if="!apiKeysStore.loading || apiKeysStore.keys.length > 0" class="keys-section">
+      <div v-if="apiKeysStore.keys.length === 0" class="empty-state">
+        <Card class="empty-card">
+          <div class="empty-content">
+            <Icon name="key" size="48" />
+            <h3>暂无 API 密钥</h3>
+            <p>点击上方按钮添加第一个 Gemini API 密钥</p>
+            <Button
+              variant="primary"
+              icon="add"
+              @click="showAddDialog = true"
+            >
+              立即添加
+            </Button>
           </div>
-        </div>
+        </Card>
+      </div>
 
-        <div class="key-info">
-          <p><strong>密钥:</strong> {{ maskKey(key.keyValue) }}</p>
-          <p><strong>使用次数:</strong> {{ key.usageCount }}</p>
-          <p><strong>最后使用:</strong> {{ formatDate(key.lastUsed) }}</p>
-          <p><strong>创建时间:</strong> {{ formatDate(key.createdAt) }}</p>
-        </div>
+      <div v-else class="keys-grid">
+        <Card 
+          v-for="key in apiKeysStore.keys" 
+          :key="key.id"
+          class="key-card"
+          :class="{ 'key-card--inactive': !key.isActive }"
+          hoverable
+        >
+          <div class="key-header">
+            <div class="key-title">
+              <Icon name="key" size="20" />
+              <h3>{{ getKeyDisplayName(key.keyValue) }}</h3>
+            </div>
+            <div class="key-status">
+              <span 
+                class="status-badge" 
+                :class="key.isActive ? 'status-badge--active' : 'status-badge--inactive'"
+              >
+                <Icon :name="key.isActive ? 'check' : 'warning'" size="12" />
+                {{ key.isActive ? '活跃' : '禁用' }}
+              </span>
+            </div>
+          </div>
 
-        <div class="key-actions">
-          <button 
-            @click="toggleKeyStatus(key)"
-            :class="{ 'enable-btn': !key.isActive, 'disable-btn': key.isActive }"
-          >
-            {{ key.isActive ? '禁用' : '启用' }}
-          </button>
-          <button @click="deleteKey(key)" class="delete-btn">
-            删除
-          </button>
-        </div>
+          <div class="key-info">
+            <div class="info-item">
+              <span class="info-label">密钥:</span>
+              <span class="info-value info-value--mono">{{ maskKey(key.keyValue) }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">使用次数:</span>
+              <span class="info-value">{{ key.usageCount.toLocaleString() }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">最后使用:</span>
+              <span class="info-value">{{ formatDate(key.lastUsed) }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">创建时间:</span>
+              <span class="info-value">{{ formatDate(key.createdAt) }}</span>
+            </div>
+          </div>
+
+          <div class="key-actions">
+            <Button
+              :variant="key.isActive ? 'warning' : 'success'"
+              size="sm"
+              :icon="key.isActive ? 'warning' : 'check'"
+              @click="toggleKeyStatus(key)"
+              :loading="updatingKeys.has(key.id)"
+            >
+              {{ key.isActive ? '禁用' : '启用' }}
+            </Button>
+            <Button
+              variant="danger"
+              size="sm"
+              icon="error"
+              @click="deleteKey(key)"
+              :loading="deletingKeys.has(key.id)"
+            >
+              删除
+            </Button>
+          </div>
+        </Card>
       </div>
     </div>
 
-    <!-- Add Keys Dialog -->
-    <div v-if="showAddDialog" class="dialog-overlay">
-      <div class="dialog">
-        <h3>批量添加 API 密钥</h3>
-        
-        <form @submit.prevent="submitKeys">
-          <div class="form-group">
-            <label for="keyInput">API 密钥</label>
-            <textarea
-              id="keyInput"
-              v-model="keyInput"
-              rows="8"
-              placeholder="请输入一个或多个 Gemini API 密钥，每行一个
+    <!-- Add Keys Modal -->
+    <Modal
+      v-model:show="showAddDialog"
+      title="批量添加 API 密钥"
+      size="lg"
+      @close="closeDialog"
+    >
+      <form @submit.prevent="submitKeys" class="add-form">
+        <div class="form-section">
+          <label for="keyInput" class="form-label">
+            <Icon name="key" size="16" />
+            API 密钥列表
+          </label>
+          <p class="form-description">
+            请输入一个或多个 Gemini API 密钥，每行一个。支持批量验证和添加。
+          </p>
+          
+          <textarea
+            id="keyInput"
+            v-model="keyInput"
+            rows="8"
+            placeholder="请输入一个或多个 Gemini API 密钥，每行一个
+
 例如：
 AIzaSyBnUlu8wdZIjWuAmgA4V3ZRi3YVbgOYukg
 AIzaSyAbcDef123456789...
 AIzaSyXyz987654321..."
-              @input="validateKeys"
-            ></textarea>
-            <div class="key-validation">
-              <div v-if="validKeys.length > 0" class="valid-keys">
-                <p>✅ 发现 {{ validKeys.length }} 个有效密钥:</p>
-                <ul>
-                  <li v-for="(key, index) in validKeys" :key="index">
-                    {{ maskKey(key) }}
-                  </li>
-                </ul>
-              </div>
-              <div v-if="invalidKeys.length > 0" class="invalid-keys">
-                <p>❌ {{ invalidKeys.length }} 个无效密钥:</p>
-                <ul>
-                  <li v-for="(key, index) in invalidKeys" :key="index">
-                    {{ key }}
-                  </li>
-                </ul>
-              </div>
-              <div v-if="duplicateKeys.length > 0" class="duplicate-keys">
-                <p>⚠️ {{ duplicateKeys.length }} 个重复密钥 (已存在):</p>
-                <ul>
-                  <li v-for="(key, index) in duplicateKeys" :key="index">
-                    {{ maskKey(key) }}
-                  </li>
-                </ul>
+            @input="validateKeys"
+            class="key-input"
+          ></textarea>
+        </div>
+        
+        <!-- Validation Results -->
+        <div v-if="keyInput.trim()" class="validation-section">
+          <Card v-if="validKeys.length > 0" variant="success" class="validation-card">
+            <div class="validation-header">
+              <Icon name="check" size="20" />
+              <h4>发现 {{ validKeys.length }} 个有效密钥</h4>
+            </div>
+            <div class="validation-list">
+              <div 
+                v-for="(key, index) in validKeys" 
+                :key="index"
+                class="validation-item"
+              >
+                <Icon name="key" size="14" />
+                <span class="key-preview">{{ maskKey(key) }}</span>
               </div>
             </div>
-          </div>
-          
-          <div class="dialog-actions">
-            <button type="button" @click="closeDialog">
-              取消
-            </button>
-            <button 
-              type="submit" 
-              :disabled="apiKeysStore.loading || validKeys.length === 0"
-            >
-              {{ apiKeysStore.loading ? '添加中...' : `添加 ${validKeys.length} 个密钥` }}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+          </Card>
+
+          <Card v-if="invalidKeys.length > 0" variant="danger" class="validation-card">
+            <div class="validation-header">
+              <Icon name="error" size="20" />
+              <h4>{{ invalidKeys.length }} 个无效密钥</h4>
+            </div>
+            <div class="validation-list">
+              <div 
+                v-for="(key, index) in invalidKeys" 
+                :key="index"
+                class="validation-item"
+              >
+                <Icon name="error" size="14" />
+                <span class="invalid-key">{{ key }}</span>
+              </div>
+            </div>
+          </Card>
+
+          <Card v-if="duplicateKeys.length > 0" variant="warning" class="validation-card">
+            <div class="validation-header">
+              <Icon name="warning" size="20" />
+              <h4>{{ duplicateKeys.length }} 个重复密钥 (已存在)</h4>
+            </div>
+            <div class="validation-list">
+              <div 
+                v-for="(key, index) in duplicateKeys" 
+                :key="index"
+                class="validation-item"
+              >
+                <Icon name="warning" size="14" />
+                <span class="key-preview">{{ maskKey(key) }}</span>
+              </div>
+            </div>
+          </Card>
+        </div>
+      </form>
+      
+      <template #footer>
+        <Button
+          variant="ghost"
+          @click="closeDialog"
+        >
+          取消
+        </Button>
+        <Button
+          variant="primary"
+          type="submit"
+          @click="submitKeys"
+          :disabled="validKeys.length === 0"
+          :loading="apiKeysStore.loading"
+          icon="add"
+        >
+          {{ validKeys.length > 0 ? `添加 ${validKeys.length} 个密钥` : '请输入有效密钥' }}
+        </Button>
+      </template>
+    </Modal>
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted, computed } from 'vue'
 import { useApiKeysStore } from '../stores/apiKeys'
+import Button from '../components/ui/Button.vue'
+import Card from '../components/ui/Card.vue'
+import Icon from '../components/ui/Icon.vue'
+import Modal from '../components/ui/Modal.vue'
 
 const apiKeysStore = useApiKeysStore()
+const updatingKeys = ref(new Set())
+const deletingKeys = ref(new Set())
 
 const showAddDialog = ref(false)
 const keyInput = ref('')
@@ -186,15 +317,25 @@ const validateKeys = () => {
 }
 
 const toggleKeyStatus = async (key) => {
-  await apiKeysStore.updateApiKey(key.id, {
-    isActive: !key.isActive
-  })
+  updatingKeys.value.add(key.id)
+  try {
+    await apiKeysStore.updateApiKey(key.id, {
+      isActive: !key.isActive
+    })
+  } finally {
+    updatingKeys.value.delete(key.id)
+  }
 }
 
 const deleteKey = async (key) => {
   const displayName = getKeyDisplayName(key.keyValue)
-  if (confirm(`确定要删除密钥 "${displayName}" 吗？`)) {
-    await apiKeysStore.deleteApiKey(key.id)
+  if (confirm(`确定要删除密钥 "${displayName}" 吗？\n\n此操作无法撤销，该密钥将立即停止使用。`)) {
+    deletingKeys.value.add(key.id)
+    try {
+      await apiKeysStore.deleteApiKey(key.id)
+    } finally {
+      deletingKeys.value.delete(key.id)
+    }
   }
 }
 
@@ -229,359 +370,478 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.api-keys {
-  max-width: 1200px;
+.api-keys-page {
+  padding: var(--spacing-6);
+  max-width: 1400px;
   margin: 0 auto;
-  padding: 20px;
-}
-
-.header {
   display: flex;
+  flex-direction: column;
+  gap: var(--spacing-8);
+}
+
+/* Page Header */
+.page-header {
+  display: flex;
+  align-items: flex-start;
   justify-content: space-between;
+  gap: var(--spacing-6);
+  flex-wrap: wrap;
+}
+
+.header-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.page-title {
+  font-size: var(--text-3xl);
+  font-weight: var(--font-bold);
+  color: var(--color-text);
+  margin: 0 0 var(--spacing-2) 0;
+}
+
+.page-description {
+  font-size: var(--text-base);
+  color: var(--color-text-secondary);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.add-button {
+  flex-shrink: 0;
+}
+
+/* Loading State */
+.loading-state {
+  display: flex;
+  justify-content: center;
   align-items: center;
-  margin-bottom: 20px;
+  min-height: 300px;
 }
 
-.add-btn {
-  background: #28a745;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 14px;
+.loading-card {
+  max-width: 400px;
+  width: 100%;
 }
 
-.add-btn:hover {
-  background: #218838;
-}
-
-.loading, .error {
+.loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-4);
   text-align: center;
-  padding: 20px;
-  margin: 20px 0;
+  padding: var(--spacing-8);
 }
 
-.error {
-  color: #dc3545;
-  background: #f8d7da;
-  border: 1px solid #f5c6cb;
-  border-radius: 5px;
+.loading-content h3 {
+  font-size: var(--text-xl);
+  font-weight: var(--font-semibold);
+  color: var(--color-text);
+  margin: 0;
+}
+
+.loading-content p {
+  font-size: var(--text-base);
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+/* Error State */
+.error-card {
+  margin-bottom: var(--spacing-6);
+}
+
+.error-content {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+}
+
+.error-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.error-text h3 {
+  font-size: var(--text-lg);
+  font-weight: var(--font-semibold);
+  margin: 0 0 var(--spacing-1) 0;
+}
+
+.error-text p {
+  font-size: var(--text-sm);
+  margin: 0;
+  opacity: 0.9;
+}
+
+/* Empty State */
+.empty-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+}
+
+.empty-card {
+  max-width: 500px;
+  width: 100%;
+}
+
+.empty-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-6);
+  text-align: center;
+  padding: var(--spacing-8);
+}
+
+.empty-content h3 {
+  font-size: var(--text-2xl);
+  font-weight: var(--font-semibold);
+  color: var(--color-text);
+  margin: 0;
+}
+
+.empty-content p {
+  font-size: var(--text-base);
+  color: var(--color-text-secondary);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Keys Grid */
+.keys-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-6);
 }
 
 .keys-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: var(--spacing-6);
 }
 
+/* Key Card */
 .key-card {
-  background: #f8f9fa;
-  border: 1px solid #e9ecef;
-  border-radius: 8px;
-  padding: 20px;
-  transition: box-shadow 0.3s;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-5);
+  transition: all var(--transition-normal);
+  position: relative;
+  overflow: hidden;
 }
 
-.key-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+.key-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--color-success), var(--color-success));
+  transition: all var(--transition-normal);
 }
 
-.key-card.inactive {
-  opacity: 0.7;
-  background: #f1f3f4;
+.key-card--inactive::before {
+  background: linear-gradient(90deg, var(--color-warning), var(--color-warning));
+}
+
+.key-card--inactive {
+  opacity: 0.8;
 }
 
 .key-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 15px;
+  justify-content: space-between;
+  gap: var(--spacing-4);
 }
 
-.key-header h3 {
+.key-title {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  flex: 1;
+  min-width: 0;
+}
+
+.key-title h3 {
+  font-size: var(--text-lg);
+  font-weight: var(--font-semibold);
+  color: var(--color-text);
   margin: 0;
-  color: #495057;
+  font-family: var(--font-mono);
 }
 
-.key-status span {
-  padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: bold;
+.key-status {
+  flex-shrink: 0;
 }
 
-.key-status .active {
-  background: #d4edda;
-  color: #155724;
+.status-badge {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  padding: var(--spacing-1) var(--spacing-3);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
-.key-status .inactive {
-  background: #f8d7da;
-  color: #721c24;
+.status-badge--active {
+  background-color: rgba(var(--color-success-rgb), 0.1);
+  color: var(--color-success);
 }
 
+.status-badge--inactive {
+  background-color: rgba(var(--color-warning-rgb), 0.1);
+  color: var(--color-warning);
+}
+
+/* Key Info */
 .key-info {
-  margin-bottom: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
 }
 
-.key-info p {
-  margin: 5px 0;
-  font-size: 14px;
-  color: #6c757d;
+.info-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-3);
+  flex-wrap: wrap;
 }
 
+.info-label {
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--color-text-secondary);
+  min-width: 80px;
+  flex-shrink: 0;
+}
+
+.info-value {
+  font-size: var(--text-sm);
+  color: var(--color-text);
+  text-align: right;
+  flex: 1;
+  min-width: 0;
+}
+
+.info-value--mono {
+  font-family: var(--font-mono);
+  font-weight: var(--font-medium);
+}
+
+/* Key Actions */
 .key-actions {
   display: flex;
-  gap: 10px;
+  gap: var(--spacing-3);
+  padding-top: var(--spacing-4);
+  border-top: 1px solid var(--color-border);
 }
 
-.key-actions button {
-  padding: 6px 12px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 12px;
-  transition: background 0.3s;
+.key-actions :deep(.button) {
+  flex: 1;
 }
 
-.enable-btn {
-  background: #28a745;
-  color: white;
-}
-
-.enable-btn:hover {
-  background: #218838;
-}
-
-.disable-btn {
-  background: #ffc107;
-  color: #212529;
-}
-
-.disable-btn:hover {
-  background: #e0a800;
-}
-
-.edit-btn {
-  background: #007bff;
-  color: white;
-}
-
-.edit-btn:hover {
-  background: #0056b3;
-}
-
-.delete-btn {
-  background: #dc3545;
-  color: white;
-}
-
-.delete-btn:hover {
-  background: #c82333;
-}
-
-.dialog-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+/* Add Form */
+.add-form {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  gap: var(--spacing-6);
+}
+
+.form-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+.form-label {
+  display: flex;
   align-items: center;
-  z-index: 1000;
-}
-
-.dialog {
-  background: white;
-  padding: 30px;
-  border-radius: 10px;
-  width: 400px;
-  max-width: 90vw;
-}
-
-.dialog h3 {
-  margin-top: 0;
-  margin-bottom: 20px;
-  color: #333;
-}
-
-.form-group {
-  margin-bottom: 15px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 5px;
-  color: #555;
-  font-weight: 500;
-}
-
-.form-group input,
-.form-group textarea {
-  width: 100%;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 5px;
-  font-size: 14px;
-  font-family: 'Courier New', monospace;
-}
-
-.form-group input:focus,
-.form-group textarea:focus {
-  outline: none;
-  border-color: #007bff;
-}
-
-.form-group textarea {
-  resize: vertical;
-  min-height: 120px;
-}
-
-.key-validation {
-  margin-top: 15px;
-  padding: 10px;
-  border-radius: 5px;
-  background: #f8f9fa;
-}
-
-.valid-keys {
-  margin-bottom: 10px;
-}
-
-.valid-keys p {
-  color: #28a745;
-  font-weight: bold;
-  margin-bottom: 5px;
-}
-
-.invalid-keys {
-  margin-bottom: 10px;
-}
-
-.invalid-keys p {
-  color: #dc3545;
-  font-weight: bold;
-  margin-bottom: 5px;
-}
-
-.duplicate-keys p {
-  color: #ffc107;
-  font-weight: bold;
-  margin-bottom: 5px;
-}
-
-.key-validation ul {
+  gap: var(--spacing-2);
+  font-size: var(--text-base);
+  font-weight: var(--font-semibold);
+  color: var(--color-text);
   margin: 0;
-  padding-left: 20px;
-  max-height: 120px;
+}
+
+.form-description {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.key-input {
+  width: 100%;
+  min-height: 200px;
+  padding: var(--spacing-4);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: var(--color-text);
+  background-color: var(--color-surface);
+  resize: vertical;
+  transition: all var(--transition-fast);
+}
+
+.key-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.1);
+}
+
+.key-input::placeholder {
+  color: var(--color-text-tertiary);
+  font-family: var(--font-mono);
+}
+
+/* Validation Section */
+.validation-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+.validation-card {
+  border: none;
+}
+
+.validation-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  margin-bottom: var(--spacing-4);
+}
+
+.validation-header h4 {
+  font-size: var(--text-base);
+  font-weight: var(--font-semibold);
+  margin: 0;
+}
+
+.validation-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  max-height: 200px;
   overflow-y: auto;
 }
 
-.key-validation li {
-  font-family: 'Courier New', monospace;
-  font-size: 12px;
-  margin: 2px 0;
-}
-
-.dialog-actions {
+.validation-item {
   display: flex;
-  gap: 10px;
-  justify-content: flex-end;
-  margin-top: 20px;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-3);
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-md);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
 }
 
-.dialog-actions button {
-  padding: 8px 16px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
+.key-preview {
+  color: inherit;
+  opacity: 0.9;
 }
 
-.dialog-actions button[type="button"] {
-  background: #6c757d;
-  color: white;
+.invalid-key {
+  color: inherit;
+  opacity: 0.8;
+  word-break: break-all;
 }
 
-.dialog-actions button[type="button"]:hover {
-  background: #545b62;
+/* Mobile optimizations */
+@media (max-width: 640px) {
+  .api-keys-page {
+    padding: var(--spacing-4);
+    gap: var(--spacing-6);
+  }
+  
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--spacing-4);
+  }
+  
+  .add-button {
+    width: 100%;
+  }
+  
+  .page-title {
+    font-size: var(--text-2xl);
+  }
+  
+  .keys-grid {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-4);
+  }
+  
+  .info-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-1);
+  }
+  
+  .info-label {
+    min-width: unset;
+  }
+  
+  .info-value {
+    text-align: left;
+  }
+  
+  .key-actions {
+    flex-direction: column;
+  }
+  
+  .validation-list {
+    max-height: 150px;
+  }
+  
+  .validation-item {
+    flex-wrap: wrap;
+  }
 }
 
-.dialog-actions button[type="submit"] {
-  background: #007bff;
-  color: white;
+/* Tablet optimizations */
+@media (max-width: 768px) {
+  .keys-grid {
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  }
 }
 
-.dialog-actions button[type="submit"]:hover:not(:disabled) {
-  background: #0056b3;
+/* Large screen optimizations */
+@media (min-width: 1200px) {
+  .keys-grid {
+    grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+  }
 }
 
-.dialog-actions button:disabled {
-  background: #ccc;
-  cursor: not-allowed;
-}
-
+/* Dark mode enhancements */
 @media (prefers-color-scheme: dark) {
-  .key-card {
-    background: #2c3e50;
-    border-color: #34495e;
-    color: #ecf0f1;
+  .key-input {
+    background-color: var(--color-surface-secondary);
   }
   
-  .key-card.inactive {
-    background: #1a252f;
+  .validation-item {
+    background-color: rgba(255, 255, 255, 0.05);
   }
-  
-  .key-header h3 {
-    color: #ecf0f1;
-  }
-  
-  .key-info p {
-    color: #bdc3c7;
-  }
-  
-  .dialog {
-    background: #2c3e50;
-    color: #ecf0f1;
-  }
-  
-  .dialog h3 {
-    color: #ecf0f1;
-  }
-  
-  .form-group label {
-    color: #bdc3c7;
-  }
-  
-  .form-group input,
-  .form-group textarea {
-    background: #34495e;
-    border-color: #4a5f7a;
-    color: #ecf0f1;
-  }
-  
-  .form-group input:focus,
-  .form-group textarea:focus {
-    border-color: #3498db;
-  }
-  
-  .key-validation {
-    background: #34495e;
-  }
-  
-  .valid-keys p {
-    color: #2ecc71;
-  }
-  
-  .invalid-keys p {
-    color: #e74c3c;
-  }
-  
-  .duplicate-keys p {
-    color: #f39c12;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .key-card,
+  .key-input {
+    transition: none;
   }
 }
 </style>
