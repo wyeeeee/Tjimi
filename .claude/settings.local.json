@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(cargo check:*)",
+      "Bash(cargo:*)",
+      "Bash(del gemini_proxy.db*)",
+      "Bash(rm:*)"
+    ],
+    "deny": []
+  }
+}

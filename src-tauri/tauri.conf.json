@@ -9,6 +9,11 @@
     "beforeBuildCommand": "npm run build",
     "frontendDist": "../dist"
   },
+  "plugins": {
+    "updater": {
+      "active": false
+    }
+  },
   "app": {
     "windows": [
       {
