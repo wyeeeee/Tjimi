@@ -4,35 +4,35 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Tauri + Vue 3 desktop application called "Tjimi". It uses:
-- **Frontend**: Vue 3 with Vite for the web interface
-- **Backend**: Rust with Tauri for the desktop application layer
-- **Build System**: Vite for frontend bundling, Cargo for Rust compilation
+This is a Tauri + Vue 3 desktop application for managing Gemini API keys and proxying requests. It provides:
+- **Frontend**: Vue 3 with Vue Router, Pinia, and responsive UI for API key management
+- **Backend**: Rust with Tauri for desktop app, Axum for HTTP server, SQLite for data storage
+- **Proxy Service**: HTTP server that forwards requests to Google's Gemini API with key rotation
 
 ## Architecture
 
-The project follows a typical Tauri architecture:
+### Frontend Structure (`src/`)
+- `main.js` - Vue app entry point with Pinia and Router
+- `App.vue` - Main app component with authentication routing
+- `components/Layout.vue` - Main layout with navigation
+- `views/` - Page components (Home, Login, ApiKeys, Logs)
+- `stores/` - Pinia stores for state management (auth, apiKeys, logs)
+- `router/` - Vue Router configuration
 
-- `src/` - Vue 3 frontend application
-  - `App.vue` - Main Vue component with greet functionality
-  - `main.js` - Vue app entry point
-  - `assets/` - Static assets (images, etc.)
-
-- `src-tauri/` - Rust backend application
-  - `src/lib.rs` - Main Tauri application logic with command handlers
-  - `src/main.rs` - Application entry point
-  - `Cargo.toml` - Rust dependencies and configuration
-  - `tauri.conf.json` - Tauri-specific configuration
-
-- `public/` - Static assets served by Vite
-- `vite.config.js` - Vite configuration optimized for Tauri development
+### Backend Structure (`src-tauri/src/`)
+- `lib.rs` - Main Tauri application with command handlers
+- `models/` - Data models (User, ApiKey, RequestLog)
+- `services/` - Business logic (auth, api_key, gemini_proxy, key_rotation)
+- `database/` - Database setup and migrations
+- `server/` - HTTP server with Axum routes
+- `commands/` - Tauri command handlers
 
 ## Common Commands
 
 ### Development
 ```bash
-npm run dev          # Start development server (runs both frontend and Tauri)
-npm run tauri dev    # Alternative way to start Tauri dev mode
+npm install          # Install frontend dependencies
+npm run dev          # Start development server (frontend + Tauri + HTTP proxy)
 ```
 
 ### Building
@@ -41,28 +41,42 @@ npm run build        # Build the frontend for production
 npm run tauri build  # Build the complete Tauri application
 ```
 
-### Preview
-```bash
-npm run preview      # Preview the production build locally
-```
+### Database
+- SQLite database (`gemini_proxy.db`) is created automatically
+- Tables: `users`, `api_keys`, `request_logs`
 
-### Rust Development
-```bash
-cd src-tauri
-cargo build          # Build Rust backend
-cargo run            # Run Rust backend directly
-```
+## Key Features
 
-## Key Configuration
+### Authentication System
+- User registration and login with bcrypt password hashing
+- Session management with local storage
+- Protected routes with Vue Router guards
 
-- **Vite Dev Server**: Runs on port 1420 (fixed port required by Tauri)
-- **HMR**: Uses WebSocket on port 1421 for hot module replacement
-- **Tauri Commands**: Defined in `src-tauri/src/lib.rs` and callable from Vue via `invoke()`
+### API Key Management
+- Create, read, update, delete API keys
+- Enable/disable keys
+- Usage tracking and statistics
+- Key rotation for load balancing
+
+### Proxy Service
+- HTTP server runs on `http://127.0.0.1:5675`
+- Forwards requests to `https://generativelanguage.googleapis.com`
+- Supports both streaming and non-streaming responses
+- Automatic key rotation and failure handling
+
+### Supported Endpoints
+- `GET /v1/models` - List available models
+- `GET /v1/models/{model}` - Get model details
+- `POST /v1/models/{model}/generateContent` - Generate content
+- `POST /v1/models/{model}/streamGenerateContent` - Stream generate content
+- `GET /health` - Health check
 
 ## Development Notes
 
-- The `greet` command in `lib.rs:3` demonstrates the Tauri command pattern
-- Vue components use `<script setup>` syntax
-- Tauri API calls are made via `@tauri-apps/api/core` import
-- The application uses Vue 3 Composition API with `ref()` for reactivity
-- Dark mode styles are handled via CSS `@media (prefers-color-scheme: dark)`
+- The HTTP proxy server starts automatically when the Tauri app launches
+- API keys are rotated based on usage count and last used time
+- Failed API keys (401/403 responses) are automatically disabled
+- All requests are logged with response times and status codes
+- Vue components use Composition API with `<script setup>`
+- Responsive design with dark mode support
+- SQLite database handles UUID primary keys as TEXT
