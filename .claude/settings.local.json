@@ -5,7 +5,14 @@
       "Bash(cargo check:*)",
       "Bash(cargo:*)",
       "Bash(del gemini_proxy.db*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm run tauri:*)",
+      "Bash(npm run dev:*)",
+      "Bash(python test:*)",
+      "WebFetch(domain:docs.sillytavern.app)",
+      "Bash(curl:*)",
+      "Bash(find:*)"
     ],
     "deny": []
   }

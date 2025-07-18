@@ -31,7 +31,7 @@ const routes = [
     name: 'settings',
     component: () => import('../views/Settings.vue'),
     meta: { requiresAuth: true }
-  }
+  },
 ]
 
 const router = createRouter({

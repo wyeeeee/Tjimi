@@ -72,5 +72,14 @@ pub async fn run_migrations(pool: &SqlitePool) -> Result<()> {
     .execute(pool)
     .await?;
 
+    // Add custom_auth_key column to app_settings table
+    sqlx::query(
+        r#"
+        ALTER TABLE app_settings ADD COLUMN custom_auth_key TEXT;
+        "#,
+    )
+    .execute(pool)
+    .await.ok(); // 忽略错误，可能列已存在
+
     Ok(())
 }

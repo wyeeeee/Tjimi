@@ -85,6 +85,76 @@
 
     <div class="settings-section">
       <div class="section-header">
+        <h2>🔐 API 访问控制</h2>
+        <p class="section-description">设置自定义验证秘钥以保护API访问</p>
+      </div>
+
+      <div class="custom-auth-section">
+        <div class="auth-status">
+          <div class="status-indicator" :class="{ 'active': hasCustomKey }">
+            <div class="status-dot"></div>
+            <span>{{ hasCustomKey ? '已启用自定义验证' : '未设置自定义验证' }}</span>
+          </div>
+        </div>
+
+        <form @submit.prevent="handleCustomKeySubmit" class="custom-key-form">
+          <div class="form-group">
+            <label for="customKey">自定义验证秘钥</label>
+            <input
+              id="customKey"
+              v-model="customKeyForm.key"
+              type="password"
+              placeholder="输入您的自定义验证秘钥"
+              class="form-input"
+              :disabled="customKeyLoading"
+            />
+            <small class="form-hint">
+              此秘钥用于验证API请求，请保管好您的秘钥
+            </small>
+          </div>
+
+          <div class="form-actions">
+            <button 
+              type="submit" 
+              :disabled="customKeyLoading || !customKeyForm.key.trim()"
+              class="btn-primary"
+            >
+              {{ customKeyLoading ? '设置中...' : (hasCustomKey ? '更新秘钥' : '设置秘钥') }}
+            </button>
+
+            <button 
+              v-if="hasCustomKey"
+              type="button" 
+              @click="handleClearCustomKey"
+              :disabled="customKeyLoading"
+              class="btn-danger"
+            >
+              {{ customKeyLoading ? '清除中...' : '清除秘钥' }}
+            </button>
+          </div>
+
+          <div v-if="customKeyError" class="error-message">
+            {{ customKeyError }}
+          </div>
+
+          <div v-if="customKeySuccess" class="success-message">
+            {{ customKeySuccess }}
+          </div>
+        </form>
+
+        <div class="usage-info">
+          <h4>使用说明</h4>
+          <ul>
+            <li>设置后，所有API请求都需要在Header中包含: <code>Authorization: Bearer your-custom-key</code></li>
+            <li>建议使用复杂的秘钥以确保安全性</li>
+            <li>可以随时更新或清除秘钥</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="section-header">
         <h2>ℹ️ 系统信息</h2>
         <p class="section-description">当前系统的基本信息</p>
       </div>
@@ -141,9 +211,10 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import { invoke } from '@tauri-apps/api/core'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -155,6 +226,15 @@ const passwordForm = ref({
 })
 
 const successMessage = ref('')
+
+// 自定义验证秘钥相关
+const customKeyForm = ref({
+  key: ''
+})
+const customKeyLoading = ref(false)
+const customKeyError = ref('')
+const customKeySuccess = ref('')
+const hasCustomKey = ref(false)
 
 const isPasswordFormValid = computed(() => {
   return passwordForm.value.currentPassword &&
@@ -195,6 +275,62 @@ const handleLogout = () => {
   authStore.logout()
   router.push('/login')
 }
+
+// 自定义验证秘钥相关函数
+const checkCustomKey = async () => {
+  try {
+    hasCustomKey.value = await invoke('has_custom_auth_key')
+  } catch (error) {
+    console.error('检查自定义秘钥失败:', error)
+  }
+}
+
+const handleCustomKeySubmit = async () => {
+  if (!customKeyForm.value.key.trim()) {
+    customKeyError.value = '请输入自定义验证秘钥'
+    return
+  }
+
+  customKeyLoading.value = true
+  customKeyError.value = ''
+  customKeySuccess.value = ''
+
+  try {
+    await invoke('set_custom_auth_key', { key: customKeyForm.value.key })
+    customKeySuccess.value = '自定义验证秘钥设置成功'
+    customKeyForm.value.key = ''
+    await checkCustomKey()
+  } catch (error) {
+    customKeyError.value = '设置失败: ' + error
+  } finally {
+    customKeyLoading.value = false
+  }
+}
+
+const handleClearCustomKey = async () => {
+  if (!confirm('确定要清除自定义验证秘钥吗？清除后API访问将不再受到保护。')) {
+    return
+  }
+
+  customKeyLoading.value = true
+  customKeyError.value = ''
+  customKeySuccess.value = ''
+
+  try {
+    await invoke('clear_custom_auth_key')
+    customKeySuccess.value = '自定义验证秘钥已清除'
+    customKeyForm.value.key = ''
+    await checkCustomKey()
+  } catch (error) {
+    customKeyError.value = '清除失败: ' + error
+  } finally {
+    customKeyLoading.value = false
+  }
+}
+
+onMounted(() => {
+  checkCustomKey()
+})
 </script>
 
 <style scoped>
@@ -555,5 +691,110 @@ const handleLogout = () => {
 .info-item:focus-within {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
+}
+
+/* Custom Auth Section */
+.custom-auth-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-6);
+}
+
+.auth-status {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  padding: var(--spacing-4);
+  background-color: var(--color-surface-secondary);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--color-text-secondary);
+}
+
+.status-indicator.active {
+  color: var(--color-success);
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--color-text-secondary);
+}
+
+.status-indicator.active .status-dot {
+  background-color: var(--color-success);
+  box-shadow: 0 0 0 2px rgba(var(--color-success-rgb), 0.2);
+}
+
+.custom-key-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-6);
+  max-width: 600px;
+}
+
+.usage-info {
+  padding: var(--spacing-4);
+  background-color: var(--color-surface-secondary);
+  border-radius: var(--radius-lg);
+  border-left: 4px solid var(--color-primary);
+}
+
+.usage-info h4 {
+  margin: 0 0 var(--spacing-3) 0;
+  font-size: var(--text-base);
+  font-weight: var(--font-semibold);
+  color: var(--color-text);
+}
+
+.usage-info ul {
+  margin: 0;
+  padding-left: var(--spacing-4);
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+  line-height: 1.6;
+}
+
+.usage-info li {
+  margin-bottom: var(--spacing-2);
+}
+
+.usage-info code {
+  background-color: var(--color-surface);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-primary);
+  border: 1px solid var(--color-border);
+}
+
+.btn-danger {
+  background-color: var(--color-danger);
+  color: var(--color-white);
+  border: none;
+  padding: var(--spacing-3) var(--spacing-4);
+  border-radius: var(--radius-md);
+  font-weight: var(--font-medium);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-danger:hover:not(:disabled) {
+  background-color: var(--color-danger-hover);
+}
+
+.btn-danger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 </style>
