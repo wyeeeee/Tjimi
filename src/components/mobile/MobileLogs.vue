@@ -75,11 +75,21 @@
         </div>
       </div>
     </div>
+    
+    <!-- 移动端分页 -->
+    <MobilePagination
+      v-if="logs.length > 0"
+      :current-page="currentPage"
+      :total-pages="totalPages"
+      :total-count="totalCount"
+      @page-change="$emit('page-change', $event)"
+    />
   </div>
 </template>
 
 <script setup>
 import Icon from '@/components/ui/Icon.vue'
+import MobilePagination from './MobilePagination.vue'
 
 defineProps({
   logs: {
@@ -87,10 +97,22 @@ defineProps({
     default: () => []
   },
   loading: Boolean,
-  error: String
+  error: String,
+  currentPage: {
+    type: Number,
+    default: 1
+  },
+  totalPages: {
+    type: Number,
+    default: 1
+  },
+  totalCount: {
+    type: Number,
+    default: 0
+  }
 })
 
-defineEmits(['refresh'])
+defineEmits(['refresh', 'page-change'])
 
 const formatTime = (dateString) => {
   const date = new Date(dateString)

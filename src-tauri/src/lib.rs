@@ -59,14 +59,25 @@ pub fn run() {
             check_default_password,
             create_api_key,
             get_all_api_keys,
+            get_api_keys_paginated,
             update_api_key,
             delete_api_key,
             get_request_logs,
+            get_request_logs_paginated,
             get_usage_stats,
             set_custom_auth_key,
+            reset_custom_auth_key,
             clear_custom_auth_key,
             has_custom_auth_key,
-            validate_custom_auth_key
+            validate_custom_auth_key,
+            minimize_window,
+            maximize_window,
+            unmaximize_window,
+            close_window,
+            toggle_maximize_window,
+            is_window_maximized,
+            start_drag,
+            is_desktop
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

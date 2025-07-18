@@ -1,5 +1,8 @@
 <template>
   <div class="app-layout">
+    <!-- 自定义窗口控制 (仅桌面端) -->
+    <WindowControls />
+    
     <!-- Mobile Header -->
     <header class="mobile-header" v-if="isMobile">
       <div class="mobile-header-content">
@@ -114,6 +117,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
 import Button from '../ui/Button.vue'
 import Icon from '../ui/Icon.vue'
+import WindowControls from '../ui/WindowControls.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -269,14 +273,26 @@ onUnmounted(() => {
 /* Sidebar */
 .sidebar {
   position: fixed;
-  top: 0;
+  top: 40px; /* 为窗口控制留出空间 */
   left: 0;
   width: 280px;
-  height: 100vh;
+  height: calc(100vh - 40px);
   background-color: var(--color-surface);
   border-right: 1px solid var(--color-border);
   z-index: var(--z-fixed);
   transition: transform var(--transition-normal);
+}
+
+/* 桌面端样式 */
+@media (min-width: 769px) {
+  .sidebar {
+    top: 40px;
+    height: calc(100vh - 40px);
+  }
+  
+  .main-content {
+    margin-top: 40px;
+  }
 }
 
 .sidebar--mobile {
@@ -309,7 +325,8 @@ onUnmounted(() => {
   justify-content: center;
   width: 48px;
   height: 48px;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  background: rgba(var(--color-primary-rgb), 0.1);
+  border: 1px solid rgba(var(--color-primary-rgb), 0.2);
   border-radius: var(--radius-xl);
   flex-shrink: 0;
 }
@@ -434,10 +451,16 @@ onUnmounted(() => {
   transition: margin-left var(--transition-normal);
 }
 
-@media (max-width: 767px) {
+@media (max-width: 768px) {
   .main-content {
     margin-left: 0;
+    margin-top: 0; /* 移动端重置 */
     padding-top: 64px;
+  }
+  
+  .sidebar {
+    top: 0; /* 移动端重置 */
+    height: 100vh;
   }
 }
 

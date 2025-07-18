@@ -2,6 +2,7 @@
 import { onMounted } from 'vue'
 import { useAuthStore } from './stores/auth'
 import AppLayout from './components/layout/AppLayout.vue'
+import WindowControls from './components/ui/WindowControls.vue'
 
 const authStore = useAuthStore()
 
@@ -13,7 +14,10 @@ onMounted(() => {
 <template>
   <div id="app">
     <AppLayout v-if="authStore.isAuthenticated" />
-    <router-view v-else />
+    <div v-else>
+      <WindowControls />
+      <router-view />
+    </div>
   </div>
 </template>
 

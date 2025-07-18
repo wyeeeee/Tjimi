@@ -70,13 +70,16 @@
           <Icon name="settings" size="20" />
           <h3>API 访问控制</h3>
         </div>
-        <p class="section-desc">设置自定义验证密钥保护API访问</p>
+        <p class="section-desc">API访问控制是强制性的，所有API请求都必须提供有效的验证密钥</p>
       </div>
 
       <div class="auth-status">
-        <div class="status-indicator" :class="{ 'active': hasCustomKey }">
+        <div class="status-indicator active">
           <div class="status-dot"></div>
-          <span>{{ hasCustomKey ? '已启用' : '未设置' }}</span>
+          <span>验证已启用</span>
+        </div>
+        <div class="default-key-info">
+          <small>默认密钥: <code>123456</code></small>
         </div>
       </div>
 
@@ -102,13 +105,12 @@
             {{ customKeyLoading ? '设置中...' : (hasCustomKey ? '更新' : '设置') }}
           </button>
           <button 
-            v-if="hasCustomKey"
             type="button" 
             @click="handleClearCustomKey"
             :disabled="customKeyLoading"
             class="btn-danger"
           >
-            清除
+            重置为默认
           </button>
         </div>
         
@@ -365,6 +367,28 @@ const handleLogout = () => {
 
 .status-indicator.active .status-dot {
   background: var(--color-success);
+}
+
+.default-key-info {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: var(--color-surface);
+  border-radius: 0.25rem;
+  border: 1px solid var(--color-border);
+}
+
+.default-key-info small {
+  color: var(--color-text-secondary);
+  font-size: 0.75rem;
+}
+
+.default-key-info code {
+  background: var(--color-primary);
+  color: white;
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+  font-family: monospace;
+  font-size: 0.75rem;
 }
 
 .info-list {

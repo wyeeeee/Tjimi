@@ -96,6 +96,7 @@ const handleSubmit = async () => {
   align-items: center;
   justify-content: center;
   padding: 1rem;
+  padding-top: calc(1rem + 40px); /* 为窗口控制留出空间 */
   position: absolute;
   top: 0;
   left: 0;
@@ -314,6 +315,7 @@ const handleSubmit = async () => {
 @media (max-width: 640px) {
   .login-page {
     padding: var(--spacing-4);
+    padding-top: var(--spacing-4); /* 移动端重置 */
   }
   
   .brand-section {

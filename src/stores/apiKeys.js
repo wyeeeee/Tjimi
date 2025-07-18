@@ -5,7 +5,14 @@ export const useApiKeysStore = defineStore('apiKeys', {
   state: () => ({
     keys: [],
     loading: false,
-    error: null
+    error: null,
+    // 分页相关
+    pagination: {
+      currentPage: 1,
+      perPage: 20,
+      totalCount: 0,
+      totalPages: 0
+    }
   }),
 
   actions: {
@@ -110,6 +117,39 @@ export const useApiKeysStore = defineStore('apiKeys', {
       } finally {
         this.loading = false
       }
+    },
+
+    async fetchApiKeysPaginated(page = 1, perPage = 20) {
+      this.loading = true
+      this.error = null
+
+      try {
+        const result = await invoke('get_api_keys_paginated', {
+          page,
+          perPage
+        })
+
+        if (result.success) {
+          this.keys = result.data.apiKeys || []
+          this.pagination = {
+            currentPage: result.data.page,
+            perPage: result.data.perPage,
+            totalCount: result.data.totalCount,
+            totalPages: result.data.totalPages
+          }
+        } else {
+          this.error = result.error
+        }
+      } catch (error) {
+        this.error = error.message
+      } finally {
+        this.loading = false
+      }
+    },
+
+    updatePagination(page, perPage) {
+      this.pagination.currentPage = page
+      this.pagination.perPage = perPage
     }
   }
 })

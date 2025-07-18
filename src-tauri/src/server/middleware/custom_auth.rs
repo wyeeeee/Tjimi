@@ -14,6 +14,7 @@ pub async fn custom_auth_middleware(
     req: Request<axum::body::Body>,
     next: Next,
 ) -> Result<Response, StatusCode> {
+    // 自定义验证现在是强制性的，所有API请求都必须提供有效的自定义密钥
     // 从请求头获取自定义验证密钥
     let auth_header_key = if let Some(auth_header) = req.headers().get("authorization") {
         if let Ok(auth_str) = auth_header.to_str() {

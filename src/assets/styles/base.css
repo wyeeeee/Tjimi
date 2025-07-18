@@ -263,23 +263,35 @@ blockquote {
   color: var(--color-text);
 }
 
-/* Scrollbar (Webkit) */
+/* 隐藏滚动条但保持滚动功能 */
+/* Firefox */
+* {
+  scrollbar-width: none;
+  scrollbar-color: transparent transparent;
+}
+
+/* Internet Explorer 10+ */
+* {
+  -ms-overflow-style: none;
+}
+
+/* Webkit 浏览器 (Chrome, Safari, Edge) */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 0px;
+  height: 0px;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-track {
-  background-color: var(--color-surface-secondary);
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: var(--color-border-hover);
-  border-radius: var(--radius-full);
+  background: transparent;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background-color: var(--color-text-secondary);
+::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 /* Container utilities */

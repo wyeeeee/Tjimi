@@ -6,7 +6,11 @@
       :logs="logsStore.logs"
       :loading="logsStore.loading"
       :error="logsStore.error"
+      :current-page="logsStore.pagination.currentPage"
+      :total-pages="logsStore.pagination.totalPages"
+      :total-count="logsStore.pagination.totalCount"
       @refresh="refreshLogs"
+      @page-change="handlePageChange"
     />
 
     <!-- 桌面端布局 -->
@@ -69,6 +73,17 @@
           </table>
         </div>
       </div>
+      
+      <!-- 分页控件 -->
+      <Pagination
+        v-if="!isMobile && logsStore.logs.length > 0"
+        :current-page="logsStore.pagination.currentPage"
+        :total-pages="logsStore.pagination.totalPages"
+        :total-count="logsStore.pagination.totalCount"
+        :per-page="logsStore.pagination.perPage"
+        @page-change="handlePageChange"
+        @per-page-change="handlePerPageChange"
+      />
     </div>
   </div>
 </template>
@@ -78,6 +93,7 @@ import { onMounted } from 'vue'
 import { useLogsStore } from '../stores/logs'
 import { useResponsive } from '@/composables/useResponsive'
 import MobileLogs from '@/components/mobile/MobileLogs.vue'
+import Pagination from '@/components/ui/Pagination.vue'
 
 const logsStore = useLogsStore()
 const { isMobile } = useResponsive()
@@ -94,11 +110,25 @@ const getStatusClass = (statusCode) => {
 }
 
 const refreshLogs = () => {
-  logsStore.fetchLogs()
+  if (isMobile.value) {
+    // 移动端也使用分页模式，但每页更少
+    logsStore.fetchLogsPaginated(1, 20)
+  } else {
+    // 桌面端使用分页模式
+    logsStore.fetchLogsPaginated(1, 50)
+  }
+}
+
+const handlePageChange = (page) => {
+  logsStore.fetchLogsPaginated(page, logsStore.pagination.perPage)
+}
+
+const handlePerPageChange = (perPage) => {
+  logsStore.fetchLogsPaginated(1, perPage)
 }
 
 onMounted(() => {
-  logsStore.fetchLogs()
+  refreshLogs()
 })
 </script>
 
