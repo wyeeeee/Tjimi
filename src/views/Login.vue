@@ -17,7 +17,7 @@
               </div>
               <div class="brand-info">
                 <h1 class="brand-title">Tjimi Proxy</h1>
-                <p class="brand-subtitle">API 管理系统</p>
+                <p class="brand-subtitle">API 轮询服务</p>
               </div>
             </div>
             <h2 class="login-title">系统登录</h2>
@@ -58,20 +58,6 @@
               <span>首次登录请使用默认密码：<code>admin123</code></span>
             </div>
             
-            <div class="login-features">
-              <div class="feature-item">
-                <Icon name="check" size="16" />
-                <span>API 密钥管理</span>
-              </div>
-              <div class="feature-item">
-                <Icon name="check" size="16" />
-                <span>请求日志监控</span>
-              </div>
-              <div class="feature-item">
-                <Icon name="check" size="16" />
-                <span>安全认证</span>
-              </div>
-            </div>
           </div>
         </template>
       </Card>
@@ -105,12 +91,18 @@ const handleSubmit = async () => {
 <style scoped>
 .login-page {
   min-height: 100vh;
+  width: 100vw;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--spacing-4);
-  position: relative;
+  padding: 1rem;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   overflow: hidden;
+  margin: 0;
 }
 
 .login-container {
@@ -122,11 +114,13 @@ const handleSubmit = async () => {
 
 /* Background */
 .login-background {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
+  width: 100vw;
+  height: 100vh;
   z-index: -1;
 }
 
@@ -136,10 +130,12 @@ const handleSubmit = async () => {
   left: 0;
   right: 0;
   bottom: 0;
+  width: 100%;
+  height: 100%;
   background: linear-gradient(135deg, 
-    var(--color-primary) 0%, 
-    var(--color-secondary) 50%, 
-    var(--color-primary) 100%);
+    #667eea 0%, 
+    #764ba2 50%, 
+    #667eea 100%);
   opacity: 0.9;
 }
 
@@ -149,6 +145,8 @@ const handleSubmit = async () => {
   left: 0;
   right: 0;
   bottom: 0;
+  width: 100%;
+  height: 100%;
   background-image: 
     radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.1) 2px, transparent 2px),
     radial-gradient(circle at 75% 75%, rgba(255, 255, 255, 0.1) 2px, transparent 2px);
@@ -193,8 +191,8 @@ const handleSubmit = async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: var(--spacing-4);
-  margin-bottom: var(--spacing-6);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
 }
 
 .brand-icon {
@@ -206,7 +204,7 @@ const handleSubmit = async () => {
   background: linear-gradient(135deg, 
     rgba(255, 255, 255, 0.2) 0%, 
     rgba(255, 255, 255, 0.1) 100%);
-  border-radius: var(--radius-2xl);
+  border-radius: 1rem;
   border: 1px solid rgba(255, 255, 255, 0.2);
   backdrop-filter: blur(10px);
   animation: pulse 2s ease-in-out infinite;
@@ -222,32 +220,32 @@ const handleSubmit = async () => {
 }
 
 .brand-title {
-  font-size: var(--text-3xl);
-  font-weight: var(--font-bold);
+  font-size: 1.875rem;
+  font-weight: 700;
   margin: 0;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  background: linear-gradient(135deg, #667eea, #764ba2);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
 .brand-subtitle {
-  font-size: var(--text-base);
-  color: var(--color-text-secondary);
+  font-size: 1rem;
+  color: #6b7280;
   margin: 0;
   opacity: 0.8;
 }
 
 .login-title {
-  font-size: var(--text-2xl);
-  font-weight: var(--font-semibold);
-  margin: 0 0 var(--spacing-2) 0;
-  color: var(--color-text);
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
+  color: #111827;
 }
 
 .login-description {
-  font-size: var(--text-base);
-  color: var(--color-text-secondary);
+  font-size: 1rem;
+  color: #6b7280;
   margin: 0;
   opacity: 0.8;
 }
@@ -256,18 +254,18 @@ const handleSubmit = async () => {
 .login-form {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-6);
-  margin-top: var(--spacing-8);
+  gap: 1.5rem;
+  margin-top: 2rem;
 }
 
 .login-button {
-  margin-top: var(--spacing-2);
+  margin-top: 0.5rem;
 }
 
 /* Footer */
 .login-footer {
   text-align: center;
-  margin-top: var(--spacing-6);
+  margin-top: 1.5rem;
 }
 
 .default-password-hint {
@@ -402,6 +400,18 @@ const handleSubmit = async () => {
       rgba(255, 255, 255, 0.1) 0%, 
       rgba(255, 255, 255, 0.05) 100%);
     border-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  .login-title {
+    color: #f9fafb;
+  }
+  
+  .login-description {
+    color: #9ca3af;
+  }
+  
+  .brand-subtitle {
+    color: #9ca3af;
   }
 }
 

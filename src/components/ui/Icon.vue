@@ -85,7 +85,14 @@ const iconComponents = {
   // 加载和状态
   loading: () => import('./icons/LoadingIcon.vue'),
   success: () => import('./icons/SuccessIcon.vue'),
-  error: () => import('./icons/ErrorIcon.vue')
+  error: () => import('./icons/ErrorIcon.vue'),
+  
+  // 新增图标
+  'trending-up': () => import('./icons/TrendingUpIcon.vue'),
+  activity: () => import('./icons/ActivityIcon.vue'),
+  copy: () => import('./icons/CopyIcon.vue'),
+  play: () => import('./icons/PlayIcon.vue'),
+  pause: () => import('./icons/PauseIcon.vue')
 }
 
 const iconComponent = computed(() => {

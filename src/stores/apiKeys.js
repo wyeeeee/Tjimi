@@ -28,17 +28,17 @@ export const useApiKeysStore = defineStore('apiKeys', {
       }
     },
 
-    async createApiKey(name, keyValue) {
+    async createApiKey(apiKeyData) {
       this.loading = true
       this.error = null
 
       try {
-        console.log('Creating API key:', { name, keyValue: keyValue.substring(0, 10) + '...' })
         const result = await invoke('create_api_key', {
-          request: { name, keyValue }
+          request: {
+            name: apiKeyData.name || `密钥 ${Date.now()}`,
+            keyValue: apiKeyData.key_value
+          }
         })
-
-        console.log('API key creation result:', result)
 
         if (result.success) {
           this.keys.push(result.data)
@@ -46,12 +46,10 @@ export const useApiKeysStore = defineStore('apiKeys', {
           await this.fetchApiKeys()
           return true
         } else {
-          console.error('API key creation failed:', result.error)
           this.error = result.error
           return false
         }
       } catch (error) {
-        console.error('API key creation error:', error)
         this.error = error.message
         return false
       } finally {
@@ -59,18 +57,21 @@ export const useApiKeysStore = defineStore('apiKeys', {
       }
     },
 
-    async updateApiKey(keyId, updates) {
+    async updateApiKey(apiKeyData) {
       this.loading = true
       this.error = null
 
       try {
         const result = await invoke('update_api_key', {
-          keyId,
-          request: updates
+          keyId: apiKeyData.id,
+          request: {
+            name: apiKeyData.name,
+            isActive: apiKeyData.isActive
+          }
         })
 
         if (result.success) {
-          const index = this.keys.findIndex(k => k.id === keyId)
+          const index = this.keys.findIndex(k => k.id === apiKeyData.id)
           if (index !== -1) {
             this.keys[index] = result.data
           }
@@ -93,7 +94,7 @@ export const useApiKeysStore = defineStore('apiKeys', {
 
       try {
         const result = await invoke('delete_api_key', {
-          keyId
+          keyId: keyId
         })
 
         if (result.success && result.data) {

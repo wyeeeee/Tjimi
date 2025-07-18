@@ -19,4 +19,20 @@ onMounted(() => {
 
 <style>
 @import './assets/styles/base.css';
+
+#app {
+  min-height: 100vh;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* Ensure full viewport coverage for login page */
+body, html {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  width: 100%;
+  overflow-x: hidden;
+}
 </style>
