@@ -1,0 +1,203 @@
+{
+  "app": {
+    "title": "ClewdR",
+    "footer": "© {{year}} ClewdR - All rights reserved",
+    "buyMeCoffee": "Buy me a coffee"
+  },
+  "auth": {
+    "title": "Authentication Required",
+    "description": "Please log in with your auth token to access ClewdR features.",
+    "token": "Auth Token",
+    "tokenPlaceholder": "Enter your auth token...",
+    "previousToken": "Previous token:",
+    "clear": "Clear",
+    "submitButton": "Authenticate",
+    "verifying": "Verifying...",
+    "success": "Authentication successful!",
+    "invalid": "Invalid token. Please try again.",
+    "error": "Authentication failed: {{message}}",
+    "enterToken": "Please enter an auth token",
+    "authTitle": "Auth Status",
+    "loggedInMessage": "You are currently logged in and have access to all features.",
+    "logout": "Logout",
+    "passwordChanged": "Note: You have been logged out because your password was changed. Please log in with your new credentials."
+  },
+  "tabs": {
+    "cookie": "Cookie",
+    "config": "Config",
+    "keys": "Keys",
+    "auth": "Auth"
+  },
+  "cookieTab": {
+    "submit": "Submit Cookie",
+    "status": "Cookie Status"
+  },
+  "cookieSubmit": {
+    "value": "Cookie Value",
+    "placeholder": "Paste your cookie here...",
+    "placeholderMulti": "Paste your cookies here (one per line)...",
+    "description": "Enter the complete cookie string including all required parameters.",
+    "descriptionMulti": "Enter multiple cookies, one per line. Each cookie will be processed individually.",
+    "submitting": "Submitting...",
+    "submitButton": "Submit Cookies",
+    "success": "Cookie submitted successfully!",
+    "allSuccess": "All {{count}} cookies submitted successfully!",
+    "allFailed": "All {{count}} cookies failed to submit.",
+    "partialSuccess": "{{successCount}} out of {{total}} cookies submitted successfully ({{errorCount}} failed).",
+    "resultDetails": "Submission details",
+    "error": {
+      "empty": "Please enter at least one cookie",
+      "format": "Invalid cookie format",
+      "auth": "Authentication failed. Please set a valid auth token.",
+      "server": "Server error."
+    }
+  },
+  "cookieStatus": {
+    "title": "Cookie Status",
+    "total": "Total: {{count}} cookies",
+    "refresh": "Refresh",
+    "refreshing": "Refreshing...",
+    "sections": {
+      "valid": "Valid Cookies",
+      "inUse": "In-Use Cookies",
+      "exhausted": "Exhausted Cookies",
+      "invalid": "Invalid Cookies"
+    },
+    "status": {
+      "available": "Available",
+      "used": "Used for {{time}}",
+      "resets": "Resets at {{time}}",
+      "unknownReset": "Unknown reset time",
+      "reasons": {
+        "freAccount": "Free account",
+        "disabled": "Organization Disabled",
+        "banned": "Banned",
+        "invalid": "Invalid",
+        "restricted": "Restricted until {{time}}",
+        "rateLimited": "Rate limited until {{time}}",
+        "unknown": "Unknown"
+      }
+    },
+    "noCookies": "No {{type}}",
+    "deleteConfirm": "Are you sure you want to delete this cookie?",
+    "copy": "Copy to clipboard"
+  },
+  "config": {
+    "title": "Configuration",
+    "saving": "Saving...",
+    "saveButton": "Save Configuration",
+    "success": "Configuration saved successfully",
+    "error": "Failed to save configuration",
+    "passwordChanged": "API password has been changed",
+    "adminPasswordChanged": "Admin password changed. You will be redirected to login page.",
+    "retry": "Retry",
+    "noData": "No configuration data available.",
+    "sections": {
+      "server": {
+        "title": "Server Settings",
+        "description": "These settings require a restart to take effect.",
+        "ip": "IP Address",
+        "port": "Port"
+      },
+      "app": {
+        "title": "App Settings",
+        "checkUpdate": "Check for updates",
+        "autoUpdate": "Auto update"
+      },
+      "network": {
+        "title": "Network Settings",
+        "password": "API Password",
+        "adminPassword": "Admin Password",
+        "proxy": "Proxy (optional)",
+        "proxyPlaceholder": "http://proxy:port",
+        "rproxy": "Reverse Proxy (optional)",
+        "rproxyPlaceholder": "https://example.com"
+      },
+      "vertex": {
+        "title": "Vertex Settings",
+        "credential": "Credential",
+        "clientSecret": "Client Secret",
+        "clientId": "Client ID",
+        "projectId": "Project ID",
+        "modelId": "Model ID",
+        "modelIdNote": "Note: This will override model in API queries"
+      },
+      "api": {
+        "title": "API Settings",
+        "maxRetries": "Max Retries",
+        "preserveChats": "Preserve Chats",
+        "webSearch": "Web Search"
+      },
+      "cache": {
+        "title": "Cache Settings",
+        "cacheResponse": "Cache Size",
+        "notHashSystem": "Do not hash system messages",
+        "notHashLastN": "Do not hash last N messages"
+      },
+      "cookie": {
+        "title": "Cookie Settings",
+        "skipFirstWarning": "Skip First Warning",
+        "skipSecondWarning": "Skip Second Warning",
+        "skipRestricted": "Skip Restricted",
+        "skipNonPro": "Skip Non-Pro",
+        "skipRateLimit": "Skip Rate Limit",
+        "skipNormalPro": "Skip Normal Pro"
+      },
+      "prompt": {
+        "title": "Prompt Configurations",
+        "realRoles": "Use Real Roles",
+        "customH": "Custom Human (optional)",
+        "customA": "Custom Assistant (optional)",
+        "customPrompt": "Custom Prompt",
+        "padtxtFile": "Pad Text File (optional)",
+        "padtxtLen": "Pad Text Length"
+      }
+    }
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Error: {{message}}",
+    "reveal": "Reveal",
+    "hide": "Hide",
+    "copy": "Copy to clipboard"
+  },
+  "keyTab": {
+    "submit": "Submit Key",
+    "status": "Key Status"
+  },
+  "keySubmit": {
+    "value": "Key Value",
+    "placeholder": "Paste your key here...",
+    "placeholderMulti": "Paste your keys here (one per line)...",
+    "description": "Enter the complete key string.",
+    "descriptionMulti": "Enter multiple keys, one per line. Each key will be processed individually.",
+    "submitting": "Submitting...",
+    "submitButton": "Submit Keys",
+    "success": "Key submitted successfully!",
+    "allSuccess": "All {{count}} keys submitted successfully!",
+    "allFailed": "All {{count}} keys failed to submit.",
+    "partialSuccess": "{{successCount}} out of {{total}} keys submitted successfully ({{errorCount}} failed).",
+    "resultDetails": "Submission details",
+    "error": {
+      "empty": "Please enter at least one key",
+      "auth": "Authentication failed. Please set a valid auth token.",
+      "server": "Server error."
+    }
+  },
+  "keyStatus": {
+    "title": "Key Status",
+    "total": "Total: {{count}} keys",
+    "refresh": "Refresh",
+    "refreshing": "Refreshing...",
+    "sections": {
+      "valid": "Valid Keys"
+    },
+    "status": {
+      "active": "Active"
+    },
+    "noKeys": "No keys found",
+    "emptyHelp": "You haven't added any keys yet. Use the 'Submit Key' tab to add keys.",
+    "deleteConfirm": "Are you sure you want to delete this key?",
+    "delete": "Delete"
+  }
+}

@@ -7,6 +7,7 @@ mod server;
 use database::init_database;
 use server::create_app;
 use commands::*;
+use services::CustomAuthService;
 use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -24,8 +25,9 @@ pub fn run() {
                 match init_database().await {
                     Ok(pool) => {
                         tracing::info!("Database initialized successfully");
-                        // Manage the pool in the app state
+                        // Manage the pool and services in the app state
                         app_handle.manage(pool.clone());
+                        app_handle.manage(CustomAuthService::new(pool.clone()));
                         
                         // Start HTTP server in background
                         let server_pool = pool.clone();
@@ -60,7 +62,11 @@ pub fn run() {
             update_api_key,
             delete_api_key,
             get_request_logs,
-            get_usage_stats
+            get_usage_stats,
+            set_custom_auth_key,
+            clear_custom_auth_key,
+            has_custom_auth_key,
+            validate_custom_auth_key
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
