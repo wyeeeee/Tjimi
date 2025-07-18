@@ -32,7 +32,7 @@
           </div>
           <div class="brand-text">
             <h2 class="brand-title">Tjimi Proxy</h2>
-            <p class="brand-subtitle">API 管理系统</p>
+            <p class="brand-subtitle">API 轮询服务</p>
           </div>
         </div>
 
@@ -125,14 +125,8 @@ const isMobileMenuOpen = ref(false)
 // Navigation items
 const navigationItems = computed(() => [
   {
-    path: '/',
-    label: '首页',
-    icon: 'home',
-    badge: null
-  },
-  {
     path: '/api-keys',
-    label: 'API 密钥',
+    label: '控制面板',
     icon: 'key',
     badge: null
   },
@@ -152,12 +146,8 @@ const navigationItems = computed(() => [
 
 // Page metadata
 const pageMetadata = {
-  '/': {
-    title: '仪表板',
-    description: '系统概览和统计信息'
-  },
   '/api-keys': {
-    title: 'API 密钥管理',
+    title: '控制面板',
     description: '管理您的 Gemini API 密钥'
   },
   '/logs': {

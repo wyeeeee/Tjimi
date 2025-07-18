@@ -1,212 +1,172 @@
 <template>
   <div class="settings">
-    <div class="settings-header">
-      <h1>系统设置</h1>
-      <p class="settings-subtitle">管理您的系统配置和安全设置</p>
-    </div>
+    <!-- 移动端使用紧凑布局 -->
+    <MobileSettings
+      v-if="isMobile"
+      :password-form="passwordForm"
+      :custom-key-form="customKeyForm"
+      :loading="authStore.loading"
+      :custom-key-loading="customKeyLoading"
+      :error="authStore.error"
+      :success-message="successMessage"
+      :custom-key-error="customKeyError"
+      :custom-key-success="customKeySuccess"
+      :has-custom-key="hasCustomKey"
+      @password-change="handlePasswordChange"
+      @custom-key-submit="handleCustomKeySubmit"
+      @clear-custom-key="handleClearCustomKey"
+      @logout="handleLogout"
+    />
 
-    <div class="settings-section">
-      <div class="section-header">
-        <h2>🔒 密码设置</h2>
-        <p class="section-description">修改您的登录密码以保护系统安全</p>
-      </div>
-
-
-      <form @submit.prevent="handlePasswordChange" class="password-form">
-        <div class="form-group">
-          <label for="currentPassword">当前密码</label>
-          <input
-            id="currentPassword"
-            v-model="passwordForm.currentPassword"
-            type="password"
-            required
-            placeholder="请输入当前密码"
-            class="form-input"
-          />
+    <!-- 桌面端使用原有布局 -->
+    <div v-else class="desktop-settings">
+      <div class="settings-section">
+        <div class="section-header">
+          <h2>🔒 密码设置</h2>
+          <p class="section-description">修改您的登录密码以保护系统安全</p>
         </div>
 
-        <div class="form-group">
-          <label for="newPassword">新密码</label>
-          <input
-            id="newPassword"
-            v-model="passwordForm.newPassword"
-            type="password"
-            required
-            placeholder="请输入新密码"
-            class="form-input"
-            minlength="6"
-          />
-          <small class="form-hint">密码长度至少6位</small>
-        </div>
-
-        <div class="form-group">
-          <label for="confirmPassword">确认新密码</label>
-          <input
-            id="confirmPassword"
-            v-model="passwordForm.confirmPassword"
-            type="password"
-            required
-            placeholder="请再次输入新密码"
-            class="form-input"
-            :class="{ 'error': passwordForm.newPassword && passwordForm.confirmPassword && passwordForm.newPassword !== passwordForm.confirmPassword }"
-          />
-          <small v-if="passwordForm.newPassword && passwordForm.confirmPassword && passwordForm.newPassword !== passwordForm.confirmPassword" class="form-error">
-            两次输入的密码不一致
-          </small>
-        </div>
-
-        <div class="form-actions">
-          <button 
-            type="submit" 
-            :disabled="authStore.loading || !isPasswordFormValid"
-            class="btn-primary"
-          >
-            {{ authStore.loading ? '修改中...' : '修改密码' }}
-          </button>
-
-          <button 
-            type="button" 
-            @click="resetForm"
-            class="btn-secondary"
-          >
-            重置
-          </button>
-        </div>
-
-        <div v-if="authStore.error" class="error-message">
-          {{ authStore.error }}
-        </div>
-
-        <div v-if="successMessage" class="success-message">
-          {{ successMessage }}
-        </div>
-      </form>
-    </div>
-
-    <div class="settings-section">
-      <div class="section-header">
-        <h2>🔐 API 访问控制</h2>
-        <p class="section-description">设置自定义验证秘钥以保护API访问</p>
-      </div>
-
-      <div class="custom-auth-section">
-        <div class="auth-status">
-          <div class="status-indicator" :class="{ 'active': hasCustomKey }">
-            <div class="status-dot"></div>
-            <span>{{ hasCustomKey ? '已启用自定义验证' : '未设置自定义验证' }}</span>
-          </div>
-        </div>
-
-        <form @submit.prevent="handleCustomKeySubmit" class="custom-key-form">
+        <form @submit.prevent="handlePasswordChange" class="password-form">
           <div class="form-group">
-            <label for="customKey">自定义验证秘钥</label>
+            <label for="currentPassword">当前密码</label>
             <input
-              id="customKey"
-              v-model="customKeyForm.key"
+              id="currentPassword"
+              v-model="passwordForm.currentPassword"
               type="password"
-              placeholder="输入您的自定义验证秘钥"
+              required
+              placeholder="请输入当前密码"
               class="form-input"
-              :disabled="customKeyLoading"
             />
-            <small class="form-hint">
-              此秘钥用于验证API请求，请保管好您的秘钥
+          </div>
+
+          <div class="form-group">
+            <label for="newPassword">新密码</label>
+            <input
+              id="newPassword"
+              v-model="passwordForm.newPassword"
+              type="password"
+              required
+              placeholder="请输入新密码"
+              class="form-input"
+              minlength="6"
+            />
+            <small class="form-hint">密码长度至少6位</small>
+          </div>
+
+          <div class="form-group">
+            <label for="confirmPassword">确认新密码</label>
+            <input
+              id="confirmPassword"
+              v-model="passwordForm.confirmPassword"
+              type="password"
+              required
+              placeholder="请再次输入新密码"
+              class="form-input"
+              :class="{ 'error': passwordForm.newPassword && passwordForm.confirmPassword && passwordForm.newPassword !== passwordForm.confirmPassword }"
+            />
+            <small v-if="passwordForm.newPassword && passwordForm.confirmPassword && passwordForm.newPassword !== passwordForm.confirmPassword" class="form-error">
+              两次输入的密码不一致
             </small>
           </div>
 
           <div class="form-actions">
             <button 
               type="submit" 
-              :disabled="customKeyLoading || !customKeyForm.key.trim()"
+              :disabled="authStore.loading || !isPasswordFormValid"
               class="btn-primary"
             >
-              {{ customKeyLoading ? '设置中...' : (hasCustomKey ? '更新秘钥' : '设置秘钥') }}
+              {{ authStore.loading ? '修改中...' : '修改密码' }}
             </button>
 
             <button 
-              v-if="hasCustomKey"
               type="button" 
-              @click="handleClearCustomKey"
-              :disabled="customKeyLoading"
-              class="btn-danger"
+              @click="resetForm"
+              class="btn-secondary"
             >
-              {{ customKeyLoading ? '清除中...' : '清除秘钥' }}
+              重置
             </button>
           </div>
 
-          <div v-if="customKeyError" class="error-message">
-            {{ customKeyError }}
+          <div v-if="authStore.error" class="error-message">
+            {{ authStore.error }}
           </div>
 
-          <div v-if="customKeySuccess" class="success-message">
-            {{ customKeySuccess }}
+          <div v-if="successMessage" class="success-message">
+            {{ successMessage }}
           </div>
         </form>
+      </div>
 
-        <div class="usage-info">
-          <h4>使用说明</h4>
-          <ul>
-            <li>设置后，所有API请求都需要在Header中包含: <code>Authorization: Bearer your-custom-key</code></li>
-            <li>建议使用复杂的秘钥以确保安全性</li>
-            <li>可以随时更新或清除秘钥</li>
-          </ul>
+      <div class="settings-section">
+        <div class="section-header">
+          <h2>🔐 API 访问控制</h2>
+          <p class="section-description">设置自定义验证秘钥以保护API访问</p>
+        </div>
+
+        <div class="custom-auth-section">
+          <div class="auth-status">
+            <div class="status-indicator" :class="{ 'active': hasCustomKey }">
+              <div class="status-dot"></div>
+              <span>{{ hasCustomKey ? '已启用自定义验证' : '未设置自定义验证' }}</span>
+            </div>
+          </div>
+
+          <form @submit.prevent="handleCustomKeySubmit" class="custom-key-form">
+            <div class="form-group">
+              <label for="customKey">自定义验证秘钥</label>
+              <input
+                id="customKey"
+                v-model="customKeyForm.key"
+                type="password"
+                placeholder="输入您的自定义验证秘钥"
+                class="form-input"
+                :disabled="customKeyLoading"
+              />
+              <small class="form-hint">
+                此秘钥用于验证API请求，请保管好您的秘钥
+              </small>
+            </div>
+
+            <div class="form-actions">
+              <button 
+                type="submit" 
+                :disabled="customKeyLoading || !customKeyForm.key.trim()"
+                class="btn-primary"
+              >
+                {{ customKeyLoading ? '设置中...' : (hasCustomKey ? '更新秘钥' : '设置秘钥') }}
+              </button>
+
+              <button 
+                v-if="hasCustomKey"
+                type="button" 
+                @click="handleClearCustomKey"
+                :disabled="customKeyLoading"
+                class="btn-danger"
+              >
+                {{ customKeyLoading ? '清除中...' : '清除秘钥' }}
+              </button>
+            </div>
+
+            <div v-if="customKeyError" class="error-message">
+              {{ customKeyError }}
+            </div>
+
+            <div v-if="customKeySuccess" class="success-message">
+              {{ customKeySuccess }}
+            </div>
+          </form>
+
+          <div class="usage-info">
+            <h4>使用说明</h4>
+            <ul>
+              <li>设置后，所有API请求都需要在Header中包含: <code>Authorization: Bearer your-custom-key</code></li>
+              <li>建议使用复杂的秘钥以确保安全性</li>
+              <li>可以随时更新或清除秘钥</li>
+            </ul>
+          </div>
         </div>
       </div>
     </div>
-
-    <div class="settings-section">
-      <div class="section-header">
-        <h2>ℹ️ 系统信息</h2>
-        <p class="section-description">当前系统的基本信息</p>
-      </div>
-
-      <div class="info-grid">
-        <div class="info-item">
-          <div class="info-label">系统类型</div>
-          <div class="info-value">单用户管理系统</div>
-        </div>
-        <div class="info-item">
-          <div class="info-label">API 服务器</div>
-          <div class="info-value">http://127.0.0.1:5675</div>
-        </div>
-        <div class="info-item">
-          <div class="info-label">支持的 API</div>
-          <div class="info-value">Gemini API v1beta</div>
-        </div>
-        <div class="info-item">
-          <div class="info-label">会话状态</div>
-          <div class="info-value status-active">已认证</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Session Management Section -->
-    <Card class="settings-section">
-      <div class="section-header">
-        <div class="section-title">
-          <Icon name="logout" size="24" />
-          <h2>会话管理</h2>
-        </div>
-        <p class="section-description">管理您的登录会话和安全设置</p>
-      </div>
-
-      <div class="danger-zone">
-        <div class="danger-zone-header">
-          <Icon name="warning" size="20" />
-          <h3>危险操作</h3>
-        </div>
-        <p class="danger-zone-description">
-          退出登录后您需要重新输入密码才能访问系统。
-        </p>
-        <Button
-          variant="danger"
-          icon="logout"
-          @click="handleLogout"
-          size="lg"
-        >
-          退出登录
-        </Button>
-      </div>
-    </Card>
   </div>
 </template>
 
@@ -214,10 +174,13 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import { useResponsive } from '@/composables/useResponsive'
 import { invoke } from '@tauri-apps/api/core'
+import MobileSettings from '@/components/mobile/MobileSettings.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const { isMobile } = useResponsive()
 
 const passwordForm = ref({
   currentPassword: '',
@@ -334,388 +297,187 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.settings-page {
-  padding: var(--spacing-6);
+.settings {
+  padding: 2rem;
   max-width: 900px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-8);
+  gap: 2rem;
 }
 
-/* Page Header */
-.page-header {
-  text-align: center;
-  padding: var(--spacing-8) 0;
-}
-
-.header-content {
+.desktop-settings {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: var(--spacing-4);
+  gap: 2rem;
 }
 
-.page-title {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-3);
-  font-size: var(--text-4xl);
-  font-weight: var(--font-bold);
-  color: var(--color-text);
-  margin: 0;
-}
-
-.page-description {
-  font-size: var(--text-lg);
-  color: var(--color-text-secondary);
-  margin: 0;
-  text-align: center;
-  max-width: 600px;
-  line-height: 1.5;
-}
-
-/* Settings Section */
 .settings-section {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-6);
+  background: var(--color-surface);
+  border-radius: 0.5rem;
+  padding: 2rem;
+  border: 1px solid var(--color-border);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .section-header {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-3);
+  margin-bottom: 1.5rem;
 }
 
-.section-title {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-3);
-}
-
-.section-title h2 {
-  font-size: var(--text-2xl);
-  font-weight: var(--font-bold);
+.section-header h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
   color: var(--color-text);
-  margin: 0;
+  margin-bottom: 0.5rem;
 }
 
 .section-description {
-  font-size: var(--text-base);
   color: var(--color-text-secondary);
-  margin: 0;
+  font-size: 1rem;
   line-height: 1.5;
-}
-
-/* Alert Card */
-.alert-card {
-  border: none;
-}
-
-.alert-content {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--spacing-4);
-}
-
-.alert-icon {
-  flex-shrink: 0;
-  margin-top: var(--spacing-1);
-}
-
-.alert-text {
-  flex: 1;
-  min-width: 0;
-}
-
-.alert-title {
-  font-size: var(--text-lg);
-  font-weight: var(--font-semibold);
-  margin: 0 0 var(--spacing-2) 0;
-}
-
-.alert-message {
-  font-size: var(--text-base);
-  margin: 0;
-  line-height: 1.5;
-  opacity: 0.9;
-}
-
-/* Password Form */
-.password-form {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-6);
-  max-width: 600px;
-}
-
-.form-grid {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-5);
 }
 
 .form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.form-input {
   width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.375rem;
+  background: var(--color-input-bg);
+  color: var(--color-text);
+  font-size: 1rem;
+  transition: border-color 0.2s;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.1);
+}
+
+.form-input.error {
+  border-color: var(--color-danger);
+}
+
+.form-hint {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+}
+
+.form-error {
+  color: var(--color-danger);
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
 }
 
 .form-actions {
   display: flex;
-  gap: var(--spacing-4);
-  padding-top: var(--spacing-2);
+  gap: 1rem;
+  margin-top: 1.5rem;
 }
 
-/* Message Cards */
-.message-card {
+.btn-primary {
+  background: var(--color-primary);
+  color: white;
   border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.375rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
 }
 
-.message-content {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-3);
-  font-size: var(--text-base);
-  font-weight: var(--font-medium);
+.btn-primary:hover:not(:disabled) {
+  background: var(--color-primary-hover);
 }
 
-/* Info Grid */
-.info-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: var(--spacing-5);
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
-.info-item {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-3);
-  padding: var(--spacing-5);
-  background-color: var(--color-surface-secondary);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--color-border);
-  transition: all var(--transition-normal);
-}
-
-.info-item:hover {
-  background-color: var(--color-surface-hover);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-}
-
-.info-header {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-2);
-}
-
-.info-label {
-  font-size: var(--text-sm);
-  font-weight: var(--font-semibold);
-  color: var(--color-text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.info-value {
-  font-size: var(--text-base);
-  font-weight: var(--font-medium);
+.btn-secondary {
+  background: var(--color-surface-secondary);
   color: var(--color-text);
-  line-height: 1.4;
-}
-
-.info-value--mono {
-  font-family: var(--font-mono);
-  font-size: var(--text-sm);
-  background-color: var(--color-surface);
-  padding: var(--spacing-2) var(--spacing-3);
-  border-radius: var(--radius-md);
   border: 1px solid var(--color-border);
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.375rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
 }
 
-.status-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-1);
-  padding: var(--spacing-1) var(--spacing-3);
-  border-radius: var(--radius-full);
-  font-size: var(--text-sm);
-  font-weight: var(--font-semibold);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+.btn-secondary:hover:not(:disabled) {
+  background: var(--color-surface-hover);
 }
 
-.status-badge--active {
-  background-color: rgba(var(--color-success-rgb), 0.1);
-  color: var(--color-success);
+.btn-danger {
+  background: var(--color-danger);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.375rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
 }
 
-/* Danger Zone */
-.danger-zone {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-4);
-  padding: var(--spacing-6);
-  background-color: rgba(var(--color-danger-rgb), 0.05);
-  border: 2px solid rgba(var(--color-danger-rgb), 0.1);
-  border-radius: var(--radius-lg);
+.btn-danger:hover:not(:disabled) {
+  background: var(--color-danger-hover);
 }
 
-.danger-zone-header {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-3);
+.btn-danger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
-.danger-zone-header h3 {
-  font-size: var(--text-lg);
-  font-weight: var(--font-semibold);
+.error-message {
+  background: rgba(var(--color-danger-rgb), 0.1);
   color: var(--color-danger);
-  margin: 0;
+  padding: 0.75rem;
+  border-radius: 0.375rem;
+  margin-top: 1rem;
+  border: 1px solid rgba(var(--color-danger-rgb), 0.2);
 }
 
-.danger-zone-description {
-  font-size: var(--text-base);
-  color: var(--color-text-secondary);
-  margin: 0;
-  line-height: 1.5;
+.success-message {
+  background: rgba(var(--color-success-rgb), 0.1);
+  color: var(--color-success);
+  padding: 0.75rem;
+  border-radius: 0.375rem;
+  margin-top: 1rem;
+  border: 1px solid rgba(var(--color-success-rgb), 0.2);
 }
 
-/* Mobile optimizations */
-@media (max-width: 640px) {
-  .settings-page {
-    padding: var(--spacing-4);
-    gap: var(--spacing-6);
-  }
-  
-  .page-header {
-    padding: var(--spacing-6) 0;
-  }
-  
-  .page-title {
-    font-size: var(--text-3xl);
-    flex-direction: column;
-    text-align: center;
-  }
-  
-  .page-description {
-    font-size: var(--text-base);
-  }
-  
-  .section-title {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--spacing-2);
-  }
-  
-  .section-title h2 {
-    font-size: var(--text-xl);
-  }
-  
-  .form-actions {
-    flex-direction: column;
-  }
-  
-  .info-grid {
-    grid-template-columns: 1fr;
-    gap: var(--spacing-4);
-  }
-  
-  .info-item {
-    padding: var(--spacing-4);
-  }
-  
-  .danger-zone {
-    padding: var(--spacing-4);
-  }
-}
-
-/* Tablet optimizations */
-@media (max-width: 768px) {
-  .info-grid {
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  }
-  
-  .password-form {
-    max-width: none;
-  }
-}
-
-/* Large screen optimizations */
-@media (min-width: 1024px) {
-  .settings-page {
-    max-width: 1000px;
-  }
-  
-  .info-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-/* Dark mode enhancements */
-@media (prefers-color-scheme: dark) {
-  .info-item:hover {
-    background-color: rgba(255, 255, 255, 0.05);
-  }
-  
-  .danger-zone {
-    background-color: rgba(var(--color-danger-rgb), 0.1);
-    border-color: rgba(var(--color-danger-rgb), 0.2);
-  }
-}
-
-/* High contrast mode */
-@media (prefers-contrast: high) {
-  .info-item,
-  .danger-zone {
-    border-width: 2px;
-  }
-  
-  .status-badge {
-    border: 1px solid currentColor;
-  }
-}
-
-/* Reduced motion */
-@media (prefers-reduced-motion: reduce) {
-  .info-item {
-    transition: none;
-  }
-  
-  .info-item:hover {
-    transform: none;
-  }
-}
-
-/* Focus management */
-.info-item:focus-within {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
-}
-
-/* Custom Auth Section */
 .custom-auth-section {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-6);
+  gap: 1.5rem;
 }
 
 .auth-status {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-3);
-  padding: var(--spacing-4);
-  background-color: var(--color-surface-secondary);
-  border-radius: var(--radius-lg);
+  padding: 1rem;
+  background: var(--color-surface-secondary);
+  border-radius: 0.5rem;
   border: 1px solid var(--color-border);
 }
 
 .status-indicator {
   display: flex;
   align-items: center;
-  gap: var(--spacing-2);
-  font-size: var(--text-sm);
-  font-weight: var(--font-medium);
+  gap: 0.5rem;
   color: var(--color-text-secondary);
 }
 
@@ -727,74 +489,111 @@ onMounted(() => {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background-color: var(--color-text-secondary);
+  background: var(--color-text-secondary);
 }
 
 .status-indicator.active .status-dot {
-  background-color: var(--color-success);
-  box-shadow: 0 0 0 2px rgba(var(--color-success-rgb), 0.2);
+  background: var(--color-success);
 }
 
-.custom-key-form {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-6);
-  max-width: 600px;
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.info-item {
+  padding: 1rem;
+  background: var(--color-surface-secondary);
+  border-radius: 0.5rem;
+  border: 1px solid var(--color-border);
+}
+
+.info-label {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  margin-bottom: 0.5rem;
+}
+
+.info-value {
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.status-active {
+  color: var(--color-success);
 }
 
 .usage-info {
-  padding: var(--spacing-4);
-  background-color: var(--color-surface-secondary);
-  border-radius: var(--radius-lg);
+  padding: 1rem;
+  background: var(--color-surface-secondary);
+  border-radius: 0.5rem;
   border-left: 4px solid var(--color-primary);
 }
 
 .usage-info h4 {
-  margin: 0 0 var(--spacing-3) 0;
-  font-size: var(--text-base);
-  font-weight: var(--font-semibold);
+  margin-bottom: 0.5rem;
   color: var(--color-text);
 }
 
 .usage-info ul {
   margin: 0;
-  padding-left: var(--spacing-4);
+  padding-left: 1.5rem;
   color: var(--color-text-secondary);
-  font-size: var(--text-sm);
-  line-height: 1.6;
 }
 
 .usage-info li {
-  margin-bottom: var(--spacing-2);
+  margin-bottom: 0.5rem;
 }
 
 .usage-info code {
-  background-color: var(--color-surface);
-  padding: 2px 6px;
-  border-radius: var(--radius-sm);
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
+  background: var(--color-surface);
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+  font-family: monospace;
+  font-size: 0.875rem;
   color: var(--color-primary);
-  border: 1px solid var(--color-border);
 }
 
-.btn-danger {
-  background-color: var(--color-danger);
-  color: var(--color-white);
-  border: none;
-  padding: var(--spacing-3) var(--spacing-4);
-  border-radius: var(--radius-md);
-  font-weight: var(--font-medium);
-  cursor: pointer;
-  transition: all var(--transition-fast);
+.danger-zone {
+  padding: 1.5rem;
+  background: rgba(var(--color-danger-rgb), 0.05);
+  border: 2px solid rgba(var(--color-danger-rgb), 0.1);
+  border-radius: 0.5rem;
 }
 
-.btn-danger:hover:not(:disabled) {
-  background-color: var(--color-danger-hover);
+.danger-zone-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
 }
 
-.btn-danger:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+.danger-zone-header h3 {
+  color: var(--color-danger);
+  margin: 0;
+}
+
+.danger-zone-description {
+  color: var(--color-text-secondary);
+  margin-bottom: 1rem;
+}
+
+@media (max-width: 768px) {
+  .settings {
+    padding: 1rem;
+  }
+  
+  .settings-section {
+    padding: 1rem;
+  }
+  
+  .form-actions {
+    flex-direction: column;
+  }
+  
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

@@ -56,12 +56,12 @@ pub async fn get_all_api_keys(
 
 #[tauri::command]
 pub async fn update_api_key(
-    key_id: String,
+    keyId: String,
     request: UpdateApiKeyRequest,
     pool: State<'_, SqlitePool>,
 ) -> Result<ApiKeyResult<ApiKeyResponse>, String> {
     let api_key_service = ApiKeyService::new(pool.inner().clone());
-    let key_uuid = Uuid::parse_str(&key_id).map_err(|e| e.to_string())?;
+    let key_uuid = Uuid::parse_str(&keyId).map_err(|e| e.to_string())?;
     
     match api_key_service.update_api_key(key_uuid, request).await {
         Ok(Some(api_key)) => Ok(ApiKeyResult {
@@ -84,11 +84,11 @@ pub async fn update_api_key(
 
 #[tauri::command]
 pub async fn delete_api_key(
-    key_id: String,
+    keyId: String,
     pool: State<'_, SqlitePool>,
 ) -> Result<ApiKeyResult<bool>, String> {
     let api_key_service = ApiKeyService::new(pool.inner().clone());
-    let key_uuid = Uuid::parse_str(&key_id).map_err(|e| e.to_string())?;
+    let key_uuid = Uuid::parse_str(&keyId).map_err(|e| e.to_string())?;
     
     match api_key_service.delete_api_key(key_uuid).await {
         Ok(deleted) => Ok(ApiKeyResult {
