@@ -13,6 +13,16 @@ pub struct ApiKeyResult<T> {
     pub error: Option<String>,
 }
 
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PaginatedApiKeysResponse {
+    pub api_keys: Vec<ApiKeyResponse>,
+    pub total_count: u32,
+    pub page: u32,
+    pub per_page: u32,
+    pub total_pages: u32,
+}
+
 #[tauri::command]
 pub async fn create_api_key(
     request: CreateApiKeyRequest,
@@ -46,6 +56,41 @@ pub async fn get_all_api_keys(
             data: Some(api_keys),
             error: None,
         }),
+        Err(e) => Ok(ApiKeyResult {
+            success: false,
+            data: None,
+            error: Some(e.to_string()),
+        }),
+    }
+}
+
+#[tauri::command]
+pub async fn get_api_keys_paginated(
+    page: Option<u32>,
+    per_page: Option<u32>,
+    pool: State<'_, SqlitePool>,
+) -> Result<ApiKeyResult<PaginatedApiKeysResponse>, String> {
+    let page = page.unwrap_or(1);
+    let per_page = per_page.unwrap_or(20).min(100); // 最多100条
+    
+    let api_key_service = ApiKeyService::new(pool.inner().clone());
+    
+    match api_key_service.get_api_keys_paginated(page, per_page).await {
+        Ok((api_keys, total_count)) => {
+            let total_pages = (total_count + per_page - 1) / per_page;
+            
+            Ok(ApiKeyResult {
+                success: true,
+                data: Some(PaginatedApiKeysResponse {
+                    api_keys,
+                    total_count,
+                    page,
+                    per_page,
+                    total_pages,
+                }),
+                error: None,
+            })
+        },
         Err(e) => Ok(ApiKeyResult {
             success: false,
             data: None,

@@ -117,6 +117,17 @@
       </div>
     </div>
 
+    <!-- 分页控件 -->
+    <Pagination
+      v-if="!isMobile && apiKeysStore.keys.length > 0"
+      :current-page="apiKeysStore.pagination.currentPage"
+      :total-pages="apiKeysStore.pagination.totalPages"
+      :total-count="apiKeysStore.pagination.totalCount"
+      :per-page="apiKeysStore.pagination.perPage"
+      @page-change="handlePageChange"
+      @per-page-change="handlePerPageChange"
+    />
+
     <!-- 添加对话框 -->
     <ApiKeyForm
       :show="formModal.isOpen.value"
@@ -154,6 +165,7 @@ import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
 import Button from '@/components/ui/Button.vue'
 import Card from '@/components/ui/Card.vue'
 import Icon from '@/components/ui/Icon.vue'
+import Pagination from '@/components/ui/Pagination.vue'
 
 const apiKeysStore = useApiKeysStore()
 const { loading, error, execute } = useLoading()
@@ -168,7 +180,21 @@ onMounted(() => {
 })
 
 const fetchApiKeys = async () => {
-  await execute(() => apiKeysStore.fetchApiKeys())
+  if (isMobile.value) {
+    // 移动端仍使用原有的无分页模式
+    await execute(() => apiKeysStore.fetchApiKeys())
+  } else {
+    // 桌面端使用分页模式
+    await execute(() => apiKeysStore.fetchApiKeysPaginated(1, 20))
+  }
+}
+
+const handlePageChange = async (page) => {
+  await execute(() => apiKeysStore.fetchApiKeysPaginated(page, apiKeysStore.pagination.perPage))
+}
+
+const handlePerPageChange = async (perPage) => {
+  await execute(() => apiKeysStore.fetchApiKeysPaginated(1, perPage))
 }
 
 const openAddDialog = () => {

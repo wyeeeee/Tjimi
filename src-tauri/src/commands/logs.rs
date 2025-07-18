@@ -11,6 +11,16 @@ pub struct LogResult<T> {
     pub error: Option<String>,
 }
 
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PaginatedLogsResponse {
+    pub logs: Vec<RequestLogResponse>,
+    pub total_count: u32,
+    pub page: u32,
+    pub per_page: u32,
+    pub total_pages: u32,
+}
+
 #[tauri::command]
 pub async fn get_request_logs(
     limit: Option<i32>,
@@ -80,6 +90,78 @@ pub async fn get_usage_stats(
             Ok(LogResult {
                 success: true,
                 data: Some(stats),
+                error: None,
+            })
+        },
+        Err(e) => Ok(LogResult {
+            success: false,
+            data: None,
+            error: Some(e.to_string()),
+        }),
+    }
+}
+
+#[tauri::command]
+pub async fn get_request_logs_paginated(
+    page: Option<u32>,
+    per_page: Option<u32>,
+    pool: State<'_, SqlitePool>,
+) -> Result<LogResult<PaginatedLogsResponse>, String> {
+    let page = page.unwrap_or(1);
+    let per_page = per_page.unwrap_or(50).min(200); // 最多200条
+    let offset = (page - 1) * per_page;
+    
+    // 获取总数
+    let total_count_result: Result<(i64,), sqlx::Error> = sqlx::query_as(
+        "SELECT COUNT(*) FROM request_logs"
+    )
+    .fetch_one(pool.inner())
+    .await;
+    
+    let total_count = match total_count_result {
+        Ok((count,)) => count as u32,
+        Err(e) => return Ok(LogResult {
+            success: false,
+            data: None,
+            error: Some(e.to_string()),
+        }),
+    };
+    
+    // 获取分页数据
+    let logs: Result<Vec<RequestLogResponse>, sqlx::Error> = sqlx::query_as(
+        r#"
+        SELECT 
+            rl.id,
+            ak.name as api_key_name,
+            rl.method,
+            rl.path,
+            rl.status_code,
+            rl.response_time_ms,
+            rl.created_at
+        FROM request_logs rl
+        JOIN api_keys ak ON rl.api_key_id = ak.id
+        ORDER BY rl.created_at DESC
+        LIMIT ? OFFSET ?
+        "#,
+    )
+    .bind(per_page)
+    .bind(offset)
+    .fetch_all(pool.inner())
+    .await;
+    
+    match logs {
+        Ok(logs) => {
+            let total_pages = (total_count + per_page - 1) / per_page;
+            
+            Ok(LogResult {
+                success: true,
+                data: Some(PaginatedLogsResponse {
+                    logs,
+                    total_count,
+                    page,
+                    per_page,
+                    total_pages,
+                }),
                 error: None,
             })
         },

@@ -81,5 +81,19 @@ pub async fn run_migrations(pool: &SqlitePool) -> Result<()> {
     .execute(pool)
     .await.ok(); // 忽略错误，可能列已存在
 
+    // Initialize default custom auth key if not set
+    use crate::services::CustomAuthService;
+    let custom_auth_service = CustomAuthService::new(pool.clone());
+    
+    // Check if custom auth key is already set
+    if !custom_auth_service.has_custom_key().await.unwrap_or(false) {
+        // Set default custom auth key to "123456"
+        if let Err(e) = custom_auth_service.set_custom_key("123456").await {
+            tracing::warn!("Failed to set default custom auth key: {}", e);
+        } else {
+            tracing::info!("Default custom auth key initialized: 123456");
+        }
+    }
+
     Ok(())
 }

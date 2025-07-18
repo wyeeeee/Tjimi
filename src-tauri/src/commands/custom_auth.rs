@@ -13,6 +13,17 @@ pub async fn set_custom_auth_key(
 }
 
 #[tauri::command]
+pub async fn reset_custom_auth_key(
+    service: State<'_, CustomAuthService>,
+) -> Result<(), String> {
+    service
+        .reset_to_default_key()
+        .await
+        .map_err(|e| format!("Failed to reset custom auth key: {}", e))
+}
+
+// 保留原命令用于兼容，但现在重置为默认密钥
+#[tauri::command]
 pub async fn clear_custom_auth_key(
     service: State<'_, CustomAuthService>,
 ) -> Result<(), String> {

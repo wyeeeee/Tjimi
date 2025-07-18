@@ -100,14 +100,17 @@
       <div class="settings-section">
         <div class="section-header">
           <h2>🔐 API 访问控制</h2>
-          <p class="section-description">设置自定义验证秘钥以保护API访问</p>
+          <p class="section-description">API访问控制是强制性的，所有API请求都必须提供有效的验证密钥</p>
         </div>
 
         <div class="custom-auth-section">
           <div class="auth-status">
-            <div class="status-indicator" :class="{ 'active': hasCustomKey }">
+            <div class="status-indicator active">
               <div class="status-dot"></div>
-              <span>{{ hasCustomKey ? '已启用自定义验证' : '未设置自定义验证' }}</span>
+              <span>验证已启用</span>
+            </div>
+            <div class="default-key-info">
+              <small>默认密钥: <code>123456</code></small>
             </div>
           </div>
 
@@ -137,13 +140,12 @@
               </button>
 
               <button 
-                v-if="hasCustomKey"
                 type="button" 
                 @click="handleClearCustomKey"
                 :disabled="customKeyLoading"
                 class="btn-danger"
               >
-                {{ customKeyLoading ? '清除中...' : '清除秘钥' }}
+                {{ customKeyLoading ? '重置中...' : '重置为默认' }}
               </button>
             </div>
 
@@ -159,9 +161,10 @@
           <div class="usage-info">
             <h4>使用说明</h4>
             <ul>
-              <li>设置后，所有API请求都需要在Header中包含: <code>Authorization: Bearer your-custom-key</code></li>
-              <li>建议使用复杂的秘钥以确保安全性</li>
-              <li>可以随时更新或清除秘钥</li>
+              <li>所有API请求都必须在Header中包含: <code>Authorization: Bearer your-custom-key</code></li>
+              <li>默认密钥为 <code>123456</code>，建议修改为复杂的密钥以确保安全性</li>
+              <li>可以随时更新密钥，或重置为默认密钥</li>
+              <li>API访问控制现在是强制性的，无法完全关闭</li>
             </ul>
           </div>
         </div>
@@ -494,6 +497,28 @@ onMounted(() => {
 
 .status-indicator.active .status-dot {
   background: var(--color-success);
+}
+
+.default-key-info {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: var(--color-surface);
+  border-radius: 0.25rem;
+  border: 1px solid var(--color-border);
+}
+
+.default-key-info small {
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+}
+
+.default-key-info code {
+  background: var(--color-primary);
+  color: white;
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+  font-family: monospace;
+  font-size: 0.875rem;
 }
 
 .info-grid {

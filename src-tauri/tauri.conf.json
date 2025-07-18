@@ -17,9 +17,15 @@
   "app": {
     "windows": [
       {
-        "title": "tjimi",
-        "width": 800,
-        "height": 600
+        "title": "Tjimi Proxy",
+        "width": 1200,
+        "height": 800,
+        "decorations": false,
+        "transparent": false,
+        "resizable": true,
+        "maximizable": true,
+        "minimizable": true,
+        "closable": true
       }
     ],
     "security": {

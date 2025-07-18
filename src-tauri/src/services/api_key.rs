@@ -84,6 +84,41 @@ impl ApiKeyService {
         }).collect())
     }
 
+    pub async fn get_api_keys_paginated(&self, page: u32, per_page: u32) -> Result<(Vec<ApiKeyResponse>, u32)> {
+        let offset = (page - 1) * per_page;
+        
+        // 获取总数
+        let total: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM api_keys")
+            .fetch_one(&self.pool)
+            .await?;
+        let total_count = total.0 as u32;
+        
+        // 获取分页数据
+        let keys: Vec<ApiKey> = sqlx::query_as(
+            r#"
+            SELECT id, name, key_value, is_active, usage_count, last_used, created_at, updated_at
+            FROM api_keys ORDER BY created_at DESC
+            LIMIT ? OFFSET ?
+            "#,
+        )
+        .bind(per_page)
+        .bind(offset)
+        .fetch_all(&self.pool)
+        .await?;
+
+        let api_keys = keys.into_iter().map(|k| ApiKeyResponse {
+            id: k.id,
+            name: k.name,
+            key_value: k.key_value,
+            is_active: k.is_active,
+            usage_count: k.usage_count,
+            last_used: k.last_used,
+            created_at: k.created_at,
+        }).collect();
+
+        Ok((api_keys, total_count))
+    }
+
     pub async fn update_api_key(&self, key_id: Uuid, request: UpdateApiKeyRequest) -> Result<Option<ApiKeyResponse>> {
         let now = Utc::now();
 

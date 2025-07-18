@@ -7,7 +7,14 @@ export const useLogsStore = defineStore('logs', {
     logs: [],
     stats: null,
     loading: false,
-    error: null
+    error: null,
+    // 分页相关
+    pagination: {
+      currentPage: 1,
+      perPage: 50,
+      totalCount: 0,
+      totalPages: 0
+    }
   }),
 
   actions: {
@@ -64,6 +71,51 @@ export const useLogsStore = defineStore('logs', {
       } finally {
         this.loading = false
       }
+    },
+
+    async fetchLogsPaginated(page = 1, perPage = 50) {
+      const authStore = useAuthStore()
+      if (!authStore.isAuthenticated) {
+        console.warn('User not authenticated, skipping logs fetch')
+        return
+      }
+
+      this.loading = true
+      this.error = null
+
+      try {
+        console.log('Fetching logs paginated:', { page, perPage })
+        const result = await invoke('get_request_logs_paginated', {
+          page,
+          perPage
+        })
+
+        console.log('Logs paginated fetch result:', result)
+
+        if (result.success) {
+          this.logs = result.data.logs || []
+          this.pagination = {
+            currentPage: result.data.page,
+            perPage: result.data.perPage,
+            totalCount: result.data.totalCount,
+            totalPages: result.data.totalPages
+          }
+          console.log('Loaded paginated logs:', this.logs.length, 'items, page:', page)
+        } else {
+          this.error = result.error
+          console.error('Logs paginated fetch error:', result.error)
+        }
+      } catch (error) {
+        this.error = error.message
+        console.error('Logs paginated fetch exception:', error)
+      } finally {
+        this.loading = false
+      }
+    },
+
+    updatePagination(page, perPage) {
+      this.pagination.currentPage = page
+      this.pagination.perPage = perPage
     }
   }
 })
