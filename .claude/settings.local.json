@@ -12,7 +12,10 @@
       "Bash(python test:*)",
       "WebFetch(domain:docs.sillytavern.app)",
       "Bash(curl:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(keytool:*)",
+      "WebFetch(domain:v2.tauri.app)",
+      "Bash(cd \"C:\\Users\\wye\\Desktop\\Tjimi\")"
     ],
     "deny": []
   }
