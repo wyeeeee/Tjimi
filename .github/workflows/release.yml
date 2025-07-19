@@ -12,40 +12,6 @@ permissions:
   contents: write
 
 jobs:
-  build-windows:
-    runs-on: windows-latest
-    
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          cache: 'npm'
-
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Build frontend
-        run: npm run build
-
-      - name: Build Tauri app for Windows
-        uses: tauri-apps/tauri-action@v0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tagName: ${{ inputs.version }}
-          releaseName: 'Tjimi ${{ inputs.version }}'
-          releaseBody: 'Windows release for Tjimi application'
-          releaseDraft: true
-          prerelease: false
-          args: --target x86_64-pc-windows-msvc
-
   build-android:
     runs-on: ubuntu-latest
     
@@ -87,10 +53,7 @@ jobs:
 
       - name: Setup Android keystore
         run: |
-          # Use existing keystore file in repository
-          echo "ANDROID_KEYSTORE_PASSWORD=123456" >> $GITHUB_ENV
-          echo "ANDROID_KEY_ALIAS=release" >> $GITHUB_ENV
-          echo "ANDROID_KEY_PASSWORD=123456" >> $GITHUB_ENV
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > src-tauri/release.keystore
 
       - name: Build Android APK
         run: |
@@ -103,14 +66,45 @@ jobs:
           name: android-apk-${{ inputs.version }}
           path: src-tauri/gen/android/app/build/outputs/apk/universal/release/*.apk
 
-      - name: Create Android Release
+      - name: Create release with Android APK
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ inputs.version }}
           name: 'Tjimi ${{ inputs.version }}'
-          body: 'Android release for Tjimi application'
+          body: 'Release for Tjimi application - Android and Windows builds'
           draft: true
           prerelease: false
           files: src-tauri/gen/android/app/build/outputs/apk/universal/release/*.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-windows:
+    needs: build-android
+    runs-on: windows-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Add Windows files to existing release
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ inputs.version }}
+          args: --target x86_64-pc-windows-msvc
