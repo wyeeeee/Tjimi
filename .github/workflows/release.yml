@@ -68,6 +68,11 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Install Android NDK
+        run: |
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "ndk;25.1.8937393"
+          echo "NDK_HOME=$ANDROID_HOME/ndk/25.1.8937393" >> $GITHUB_ENV
+
       - name: Install Android targets
         run: rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android
 
@@ -79,10 +84,10 @@ jobs:
 
       - name: Setup Android keystore
         run: |
-          echo "${{ secrets.ANDROID_KEYSTORE }}" | base64 -d > src-tauri/release.keystore
-          echo "ANDROID_KEYSTORE_PASSWORD=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" >> $GITHUB_ENV
-          echo "ANDROID_KEY_ALIAS=${{ secrets.ANDROID_KEY_ALIAS }}" >> $GITHUB_ENV
-          echo "ANDROID_KEY_PASSWORD=${{ secrets.ANDROID_KEY_PASSWORD }}" >> $GITHUB_ENV
+          # Use existing keystore file in repository
+          echo "ANDROID_KEYSTORE_PASSWORD=123456" >> $GITHUB_ENV
+          echo "ANDROID_KEY_ALIAS=release" >> $GITHUB_ENV
+          echo "ANDROID_KEY_PASSWORD=123456" >> $GITHUB_ENV
 
       - name: Build Android APK
         run: |
