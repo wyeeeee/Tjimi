@@ -60,13 +60,26 @@ jobs:
           cd src-tauri
           npm run tauri android build
 
+      - name: Check APK files
+        run: |
+          echo "Checking for APK files..."
+          find src-tauri/gen/android/app/build/outputs/apk -name "*.apk" -type f || echo "No APK files found"
+          ls -la src-tauri/gen/android/app/build/outputs/apk/universal/release/ || echo "Release directory not found"
+
       - name: Upload Android APK
         uses: actions/upload-artifact@v4
         with:
           name: android-apk-${{ inputs.version }}
           path: src-tauri/gen/android/app/build/outputs/apk/universal/release/*.apk
 
-      - name: Create release with Android APK
+      - name: Find APK file
+        id: find_apk
+        run: |
+          APK_FILE=$(find src-tauri/gen/android/app/build/outputs/apk -name "*.apk" -type f | head -1)
+          echo "apk_file=$APK_FILE" >> $GITHUB_OUTPUT
+          echo "Found APK: $APK_FILE"
+
+      - name: Create or update release with Android APK
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ inputs.version }}
@@ -74,12 +87,11 @@ jobs:
           body: 'Release for Tjimi application - Android and Windows builds'
           draft: true
           prerelease: false
-          files: src-tauri/gen/android/app/build/outputs/apk/universal/release/*.apk
+          files: ${{ steps.find_apk.outputs.apk_file }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build-windows:
-    needs: build-android
     runs-on: windows-latest
     
     steps:
@@ -101,10 +113,13 @@ jobs:
       - name: Build frontend
         run: npm run build
 
-      - name: Add Windows files to existing release
+      - name: Create or update release with Windows files
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tagName: ${{ inputs.version }}
+          releaseName: 'Tjimi ${{ inputs.version }}'
+          releaseBody: 'Release for Tjimi application - Android and Windows builds'
+          releaseDraft: true
           args: --target x86_64-pc-windows-msvc
