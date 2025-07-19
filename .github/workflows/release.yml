@@ -79,12 +79,21 @@ jobs:
           name: android-apk-${{ inputs.version }}
           path: src-tauri/gen/android/app/build/outputs/apk/universal/release/*.apk
 
-      - name: Find APK file
+      - name: Find and rename APK file
         id: find_apk
         run: |
           APK_FILE=$(find src-tauri/gen/android/app/build/outputs/apk -name "*.apk" -type f | head -1)
-          echo "apk_file=$APK_FILE" >> $GITHUB_OUTPUT
-          echo "Found APK: $APK_FILE"
+          if [ -n "$APK_FILE" ]; then
+            APK_DIR=$(dirname "$APK_FILE")
+            NEW_APK_NAME="Tjimi-${{ inputs.version }}.apk"
+            NEW_APK_PATH="$APK_DIR/$NEW_APK_NAME"
+            mv "$APK_FILE" "$NEW_APK_PATH"
+            echo "apk_file=$NEW_APK_PATH" >> $GITHUB_OUTPUT
+            echo "Renamed APK to: $NEW_APK_PATH"
+          else
+            echo "No APK file found"
+            exit 1
+          fi
 
       - name: Create or update release with Android APK
         uses: softprops/action-gh-release@v1
@@ -129,4 +138,4 @@ jobs:
           releaseName: 'Tjimi ${{ inputs.version }}'
           releaseBody: 'Release for Tjimi application - Android and Windows builds'
           releaseDraft: false
-          args: --target x86_64-pc-windows-msvc
+          args: --target x86_64-pc-windows-msvc --bundles nsis
