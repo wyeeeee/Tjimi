@@ -19,6 +19,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Create and push tag
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git tag -a ${{ inputs.version }} -m "Release ${{ inputs.version }}"
+          git push origin ${{ inputs.version }}
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -85,7 +92,7 @@ jobs:
           tag_name: ${{ inputs.version }}
           name: 'Tjimi ${{ inputs.version }}'
           body: 'Release for Tjimi application - Android and Windows builds'
-          draft: true
+          draft: false
           prerelease: false
           files: ${{ steps.find_apk.outputs.apk_file }}
         env:
@@ -121,5 +128,5 @@ jobs:
           tagName: ${{ inputs.version }}
           releaseName: 'Tjimi ${{ inputs.version }}'
           releaseBody: 'Release for Tjimi application - Android and Windows builds'
-          releaseDraft: true
+          releaseDraft: false
           args: --target x86_64-pc-windows-msvc
