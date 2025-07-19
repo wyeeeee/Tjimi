@@ -35,33 +35,34 @@
           <table>
             <thead>
               <tr>
-                <th>时间</th>
-                <th>方法</th>
-                <th>路径</th>
-                <th>状态码</th>
-                <th>响应时间</th>
-                <th>API 密钥</th>
+                <th class="logs-header">请求日志</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="log in logsStore.logs" :key="log.id">
-                <td>{{ formatDate(log.createdAt) }}</td>
-                <td>
-                  <span class="method-badge" :class="log.method.toLowerCase()">
-                    {{ log.method }}
-                  </span>
+              <tr v-for="log in logsStore.logs" :key="log.id" class="log-row">
+                <td class="main-row">
+                  <div class="log-main-info">
+                    <div class="log-time">{{ formatDate(log.createdAt) }}</div>
+                    <div class="log-method">
+                      <span class="method-badge" :class="log.method.toLowerCase()">
+                        {{ log.method }}
+                      </span>
+                    </div>
+                    <div class="log-status">
+                      <span class="status-badge" :class="getStatusClass(log.statusCode)">
+                        {{ log.statusCode }}
+                      </span>
+                    </div>
+                    <div class="log-response-time">{{ log.responseTimeMs }}ms</div>
+                    <div class="log-api-key">{{ log.apiKeyName }}</div>
+                  </div>
+                  <div class="log-path">
+                    <span class="path-text">{{ log.path }}</span>
+                  </div>
                 </td>
-                <td class="path">{{ log.path }}</td>
-                <td>
-                  <span class="status-badge" :class="getStatusClass(log.statusCode)">
-                    {{ log.statusCode }}
-                  </span>
-                </td>
-                <td>{{ log.responseTimeMs }}ms</td>
-                <td>{{ log.apiKeyName }}</td>
               </tr>
               <tr v-if="logsStore.logs.length === 0 && !logsStore.loading" class="no-data-row">
-                <td colspan="6" class="no-data">
+                <td class="no-data">
                   <div class="no-data-content">
                     <div class="no-data-icon">📝</div>
                     <div class="no-data-text">暂无请求日志</div>
@@ -109,6 +110,7 @@ const getStatusClass = (statusCode) => {
   return 'other'
 }
 
+
 const refreshLogs = () => {
   if (isMobile.value) {
     // 移动端也使用分页模式，但每页更少
@@ -140,12 +142,84 @@ onMounted(() => {
 }
 
 .desktop-logs {
-  padding: 2rem;
-  max-width: 1400px;
+  padding: 1.5rem;
+  max-width: 100%;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 1.5rem;
+  width: 100%;
+}
+
+/* 大屏幕优化 */
+@media (min-width: 1200px) {
+  .desktop-logs {
+    max-width: 1400px;
+    padding: 2rem;
+    gap: 2rem;
+  }
+  
+  .log-main-info {
+    padding: 1.25rem 1.5rem;
+    gap: 2rem;
+  }
+  
+  .log-time {
+    width: 16%;
+    min-width: 140px;
+  }
+  
+  .log-method {
+    width: 8%;
+    min-width: 70px;
+  }
+  
+  .log-status {
+    width: 8%;
+    min-width: 70px;
+  }
+  
+  .log-response-time {
+    width: 10%;
+    min-width: 85px;
+  }
+  
+  .log-path {
+    padding: 1rem 1.5rem;
+  }
+}
+
+/* 中等屏幕优化 */
+@media (min-width: 769px) and (max-width: 1199px) {
+  .desktop-logs {
+    max-width: 100%;
+    padding: 1.5rem 2rem;
+  }
+  
+  .log-main-info {
+    padding: 1rem 1.25rem;
+    gap: 1.5rem;
+  }
+  
+  .log-time {
+    width: 20%;
+    min-width: 120px;
+  }
+  
+  .log-method {
+    width: 12%;
+    min-width: 60px;
+  }
+  
+  .log-status {
+    width: 12%;
+    min-width: 60px;
+  }
+  
+  .log-response-time {
+    width: 14%;
+    min-width: 75px;
+  }
 }
 
 .header {
@@ -223,10 +297,78 @@ td {
   font-size: 0.875rem;
 }
 
-.path {
-  font-family: monospace;
-  word-break: break-all;
-  max-width: 200px;
+/* 新的日志行样式 */
+.log-row {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.main-row {
+  padding: 0;
+}
+
+.log-main-info {
+  display: flex;
+  align-items: center;
+  padding: 1rem;
+  gap: 1rem;
+  width: 100%;
+  justify-content: space-between;
+}
+
+.log-time {
+  flex: 0 0 auto;
+  width: 18%;
+  min-width: 120px;
+  font-size: 0.875rem;
+  color: var(--color-text);
+  font-weight: 500;
+}
+
+.log-method {
+  flex: 0 0 auto;
+  width: 10%;
+  min-width: 60px;
+}
+
+.log-status {
+  flex: 0 0 auto;
+  width: 10%;
+  min-width: 60px;
+}
+
+.log-response-time {
+  flex: 0 0 auto;
+  width: 12%;
+  min-width: 75px;
+  font-size: 0.875rem;
+  color: var(--color-text);
+  font-weight: 500;
+  font-family: var(--font-mono, monospace);
+}
+
+.log-api-key {
+  flex: 1;
+  min-width: 100px;
+  font-size: 0.875rem;
+  color: var(--color-text);
+  font-family: var(--font-mono, monospace);
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.log-path {
+  padding: 0.75rem 1rem;
+  background: var(--color-surface-secondary);
+  border-top: 1px solid var(--color-border);
+  border-radius: 0 0 0.375rem 0.375rem;
+}
+
+.logs-header {
+  font-weight: 600;
+  color: var(--color-text);
+  text-align: center;
 }
 
 .method-badge {
@@ -324,30 +466,113 @@ td {
   color: var(--color-text-secondary);
 }
 
+/* 小屏幕优化 */
 @media (max-width: 768px) {
   .desktop-logs {
     padding: 1rem;
+    gap: 1rem;
   }
   
   .header {
     flex-direction: column;
     align-items: stretch;
     gap: 1rem;
+    margin-bottom: 1rem;
   }
   
-  th,
-  td {
-    padding: 0.75rem 0.5rem;
+  .header h1 {
+    font-size: 1.25rem;
   }
   
-  .path {
-    max-width: 120px;
+  .log-main-info {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.875rem;
+    padding: 1rem;
+    justify-content: stretch;
+  }
+  
+  .log-time,
+  .log-method,
+  .log-status, 
+  .log-response-time,
+  .log-api-key {
+    width: 100%;
+    min-width: auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.875rem;
+    text-align: left;
+  }
+  
+  .log-time::before { content: "时间: "; font-weight: 600; color: var(--color-text-secondary); }
+  .log-response-time::before { content: "响应时间: "; font-weight: 600; color: var(--color-text-secondary); }
+  .log-api-key::before { content: "API密钥: "; font-weight: 600; color: var(--color-text-secondary); }
+  
+  .log-method {
+    justify-content: flex-start;
+    gap: 0.75rem;
+  }
+  
+  .log-method::before { content: "方法: "; font-weight: 600; color: var(--color-text-secondary); }
+  
+  .log-status {
+    justify-content: flex-start; 
+    gap: 0.75rem;
+  }
+  
+  .log-status::before { content: "状态: "; font-weight: 600; color: var(--color-text-secondary); }
+  
+  .log-api-key {
+    text-align: right;
+    white-space: nowrap;
+    overflow: visible;
+    text-overflow: clip;
+  }
+  
+  .method-badge,
+  .status-badge {
+    min-width: 52px;
+    padding: 0.375rem 0.5rem;
+    font-size: 0.75rem;
+  }
+  
+  .log-path {
+    padding: 0.75rem 1rem;
+    margin-top: 0.25rem;
+  }
+  
+  .path-text {
+    font-size: 0.8125rem;
+    line-height: 1.5;
+  }
+}
+
+/* 超小屏幕优化 */
+@media (max-width: 480px) {
+  .desktop-logs {
+    padding: 0.75rem;
+  }
+  
+  .log-main-info {
+    padding: 0.75rem;
+    gap: 0.75rem;
   }
   
   .method-badge,
   .status-badge {
     min-width: 48px;
     padding: 0.25rem 0.375rem;
+    font-size: 0.6875rem;
+  }
+  
+  .log-path {
+    padding: 0.625rem 0.75rem;
+  }
+  
+  .path-text {
+    font-size: 0.75rem;
   }
 }
 
@@ -396,6 +621,7 @@ td {
   font-size: var(--text-sm);
   color: var(--color-text-secondary);
   word-break: break-all;
+  line-height: 1.4;
 }
 
 /* Status Badge */
@@ -569,7 +795,7 @@ td {
   }
   
   :deep(.path-column) {
-    max-width: 120px;
+    max-width: 80px;
   }
 }
 
@@ -582,7 +808,7 @@ td {
   }
   
   :deep(.path-column) {
-    max-width: 160px;
+    max-width: 120px;
   }
 }
 

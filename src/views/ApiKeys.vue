@@ -35,8 +35,8 @@
     </div>
 
     <!-- 统计信息 -->
-    <MobileStats v-if="isMobile" :api-keys="apiKeysStore.keys" />
-    <ApiKeyStats v-else :api-keys="apiKeysStore.keys" />
+    <MobileStats v-if="isMobile" :api-keys="apiKeysStore.keys" :logs-stats="logsStore.stats" />
+    <ApiKeyStats v-else :api-keys="apiKeysStore.keys" :logs-stats="logsStore.stats" />
 
     <!-- 加载状态 -->
     <LoadingState
@@ -100,6 +100,7 @@
           v-for="key in apiKeysStore.keys"
           :key="key.id"
           :api-key="key"
+          :today-requests="getApiKeyTodayRequests(key.id)"
           @delete="openDeleteDialog"
           @toggle-enabled="toggleApiKey"
         />
@@ -111,6 +112,7 @@
           v-for="key in apiKeysStore.keys"
           :key="key.id"
           :api-key="key"
+          :today-requests="getApiKeyTodayRequests(key.id)"
           @delete="openDeleteDialog"
           @toggle-enabled="toggleApiKey"
         />
@@ -151,6 +153,7 @@
 <script setup>
 import { onMounted, computed, watch, ref } from 'vue'
 import { useApiKeysStore } from '@/stores/apiKeys'
+import { useLogsStore } from '@/stores/logs'
 import { useLoading } from '@/composables/useLoading'
 import { useModal } from '@/composables/useModal'
 import { useResponsive } from '@/composables/useResponsive'
@@ -168,6 +171,7 @@ import Icon from '@/components/ui/Icon.vue'
 import Pagination from '@/components/ui/Pagination.vue'
 
 const apiKeysStore = useApiKeysStore()
+const logsStore = useLogsStore()
 const { loading, error, execute } = useLoading()
 const formModal = useModal()
 const { isMobile, isTablet, isDesktop } = useResponsive()
@@ -177,6 +181,7 @@ const deleteApiKey = ref(null)
 
 onMounted(() => {
   fetchApiKeys()
+  logsStore.fetchStats()
 })
 
 const fetchApiKeys = async () => {
@@ -224,6 +229,10 @@ const handleDelete = async () => {
     showDeleteDialog.value = false
     deleteApiKey.value = null
   })
+}
+
+const getApiKeyTodayRequests = (apiKeyId) => {
+  return logsStore.stats?.apiKeyTodayRequests?.[apiKeyId] || 0
 }
 
 const toggleApiKey = async (apiKey) => {

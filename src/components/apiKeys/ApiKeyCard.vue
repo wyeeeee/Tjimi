@@ -54,7 +54,7 @@
     <div class="api-key-stats">
       <div class="stat-item">
         <span class="stat-label">今日请求</span>
-        <span class="stat-value">{{ formatNumber(apiKey.usageCount || 0) }}</span>
+        <span class="stat-value">{{ formatNumber(todayRequests) }}</span>
       </div>
       <div class="stat-item">
         <span class="stat-label">总请求</span>
@@ -81,6 +81,10 @@ const props = defineProps({
   apiKey: {
     type: Object,
     required: true
+  },
+  todayRequests: {
+    type: Number,
+    default: 0
   }
 })
 

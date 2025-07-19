@@ -119,7 +119,56 @@
       </form>
     </div>
 
+    <!-- 错误重试设置 -->
+    <div class="settings-section">
+      <div class="section-header">
+        <div class="section-title">
+          <Icon name="refresh" size="20" />
+          <h3>错误重试设置</h3>
+        </div>
+        <p class="section-desc">配置当API请求失败时的重试次数和行为</p>
+      </div>
 
+      <form @submit.prevent="handleRetrySubmit" class="form-compact">
+        <div class="form-group">
+          <label>重试次数</label>
+          <input
+            v-model.number="retryForm.count"
+            type="number"
+            min="1"
+            placeholder="输入重试次数"
+            class="form-input"
+            :disabled="retryLoading"
+            required
+          />
+          <span class="form-hint">设置API请求失败时的重试次数 (最少1次，默认3次，可设置为无限次)</span>
+        </div>
+
+        <div class="form-actions">
+          <button 
+            type="submit" 
+            :disabled="retryLoading || retryForm.count < 1"
+            class="btn-primary"
+          >
+            {{ retryLoading ? '保存中...' : '保存设置' }}
+          </button>
+        </div>
+        
+        <div v-if="retryError" class="message error">{{ retryError }}</div>
+        <div v-if="retrySuccess" class="message success">{{ retrySuccess }}</div>
+      </form>
+
+      <div class="retry-info">
+        <h4>重试机制说明</h4>
+        <ul>
+          <li>当API密钥返回错误时，系统会自动切换到下一个可用密钥进行重试</li>
+          <li>支持流式和非流式请求的重试</li>
+          <li>重试间隔采用指数退避策略，避免过于频繁的请求</li>
+          <li>如果API密钥返回401或403错误，该密钥会被标记为失效</li>
+          <li>重试次数达到限制后，请求会返回最后一次的错误信息</li>
+        </ul>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -130,12 +179,16 @@ import Icon from '@/components/ui/Icon.vue'
 const props = defineProps({
   passwordForm: Object,
   customKeyForm: Object,
+  retryForm: Object,
   loading: Boolean,
   customKeyLoading: Boolean,
+  retryLoading: Boolean,
   error: String,
   successMessage: String,
   customKeyError: String,
   customKeySuccess: String,
+  retryError: String,
+  retrySuccess: String,
   hasCustomKey: Boolean
 })
 
@@ -143,6 +196,7 @@ const emit = defineEmits([
   'password-change',
   'custom-key-submit', 
   'clear-custom-key',
+  'retry-submit',
   'logout'
 ])
 
@@ -172,6 +226,10 @@ const handleCustomKeySubmit = () => {
 
 const handleClearCustomKey = () => {
   emit('clear-custom-key')
+}
+
+const handleRetrySubmit = () => {
+  emit('retry-submit')
 }
 
 const handleLogout = () => {
@@ -425,6 +483,31 @@ const handleLogout = () => {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+}
+
+.retry-info {
+  padding: 0.75rem;
+  background: var(--color-surface-secondary);
+  border-radius: 0.375rem;
+  border-left: 4px solid var(--color-primary);
+  margin-top: 1rem;
+}
+
+.retry-info h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.875rem;
+  color: var(--color-text);
+}
+
+.retry-info ul {
+  margin: 0;
+  padding-left: 1rem;
+  color: var(--color-text-secondary);
+  font-size: 0.75rem;
+}
+
+.retry-info li {
+  margin-bottom: 0.375rem;
 }
 
 @media (max-width: 480px) {
