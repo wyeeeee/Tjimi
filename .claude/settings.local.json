@@ -15,7 +15,8 @@
       "Bash(find:*)",
       "Bash(keytool:*)",
       "WebFetch(domain:v2.tauri.app)",
-      "Bash(cd \"C:\\Users\\wye\\Desktop\\Tjimi\")"
+      "Bash(cd \"C:\\Users\\wye\\Desktop\\Tjimi\")",
+      "Bash(mkdir:*)"
     ],
     "deny": []
   }
