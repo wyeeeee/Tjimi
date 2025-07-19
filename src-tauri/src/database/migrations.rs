@@ -81,6 +81,15 @@ pub async fn run_migrations(pool: &SqlitePool) -> Result<()> {
     .execute(pool)
     .await.ok(); // 忽略错误，可能列已存在
 
+    // Add retry_count column to app_settings table
+    sqlx::query(
+        r#"
+        ALTER TABLE app_settings ADD COLUMN retry_count INTEGER DEFAULT 3;
+        "#,
+    )
+    .execute(pool)
+    .await.ok(); // 忽略错误，可能列已存在
+
     // Initialize default custom auth key if not set
     use crate::services::CustomAuthService;
     let custom_auth_service = CustomAuthService::new(pool.clone());

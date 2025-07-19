@@ -30,8 +30,23 @@
 
     <!-- Statistics Cards -->
     <div class="stats-section">
-      <h2 class="section-title">系统统计</h2>
-      <div class="stats-grid">
+      <div class="stats-header">
+        <h2 class="section-title">系统统计</h2>
+        <div v-if="logsStore.stats?.resetTime" class="reset-info">
+          <Icon name="info" size="14" />
+          <span>今日统计从 {{ formatResetTime(logsStore.stats.resetTime) }} 开始计算</span>
+        </div>
+      </div>
+      
+      <!-- Mobile Stats -->
+      <MobileStats
+        v-if="isMobile"
+        :api-keys="apiKeysStore.keys"
+        :logs-stats="logsStore.stats"
+      />
+      
+      <!-- Desktop Stats -->
+      <div v-else class="stats-grid">
         <StatCard
           title="API 密钥"
           :value="apiKeysStore.keys.length"
@@ -45,20 +60,30 @@
         />
         
         <StatCard
-          title="总请求数"
-          :value="logsStore.stats?.totalRequests || 0"
+          title="今日请求"
+          :value="logsStore.stats?.todayRequests || 0"
           icon="logs"
           color="success"
           :loading="logsStore.loading"
+          :trend="{
+            value: logsStore.stats?.totalRequests || 0,
+            label: '总请求数',
+            type: 'neutral'
+          }"
         />
         
         <StatCard
-          title="平均响应时间"
-          :value="Math.round(logsStore.stats?.avgResponseTime || 0)"
+          title="今日响应时间"
+          :value="Math.round(logsStore.stats?.todayAvgResponseTime || 0)"
           suffix="ms"
           icon="refresh"
           color="info"
           :loading="logsStore.loading"
+          :trend="{
+            value: Math.round(logsStore.stats?.avgResponseTime || 0) + 'ms',
+            label: '总平均',
+            type: 'neutral'
+          }"
         />
         
         <StatCard
@@ -184,13 +209,16 @@
 import { computed, onMounted, ref } from 'vue'
 import { useApiKeysStore } from '../stores/apiKeys'
 import { useLogsStore } from '../stores/logs'
+import { useResponsive } from '@/composables/useResponsive'
 import Button from '../components/ui/Button.vue'
 import Card from '../components/ui/Card.vue'
 import Icon from '../components/ui/Icon.vue'
 import StatCard from '../components/ui/StatCard.vue'
+import MobileStats from '../components/mobile/MobileStats.vue'
 
 const apiKeysStore = useApiKeysStore()
 const logsStore = useLogsStore()
+const { isMobile } = useResponsive()
 
 const activeKeysCount = computed(() => {
   return apiKeysStore.keys.filter(key => key.isActive).length
@@ -266,6 +294,18 @@ const formatTime = (timestamp) => {
   })
 }
 
+const formatResetTime = (resetTime) => {
+  const date = new Date(resetTime)
+  // Convert to China timezone for display
+  const chinaTime = new Date(date.getTime() + 8 * 60 * 60 * 1000)
+  return chinaTime.toLocaleString('zh-CN', {
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
 onMounted(async () => {
   await apiKeysStore.fetchApiKeys()
   await logsStore.fetchStats()
@@ -300,12 +340,30 @@ onMounted(async () => {
   font-size: var(--text-2xl);
   font-weight: var(--font-bold);
   color: var(--color-text);
-  margin: 0 0 var(--spacing-6) 0;
+  margin: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
   gap: var(--spacing-4);
+}
+
+.stats-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  margin-bottom: var(--spacing-6);
+}
+
+.reset-info {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-3);
+  background-color: var(--color-surface-secondary);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
 }
 
 .view-all-btn {

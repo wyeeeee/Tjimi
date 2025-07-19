@@ -43,7 +43,11 @@
     <div class="key-stats">
       <div class="stat-item">
         <span class="stat-value">{{ formatNumber(apiKey.usageCount || 0) }}</span>
-        <span class="stat-label">请求</span>
+        <span class="stat-label">总请求</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-value">{{ todayRequestsDisplay }}</span>
+        <span class="stat-label">今日请求</span>
       </div>
       <div class="stat-item">
         <span class="stat-value">{{ formatDate(apiKey.lastUsed) }}</span>
@@ -63,6 +67,10 @@ const props = defineProps({
   apiKey: {
     type: Object,
     required: true
+  },
+  todayRequests: {
+    type: Number,
+    default: 0
   }
 })
 
@@ -75,6 +83,10 @@ const statusClass = computed(() => ({
   'status-active': props.apiKey.isActive,
   'status-inactive': !props.apiKey.isActive
 }))
+
+const todayRequestsDisplay = computed(() => {
+  return formatNumber(props.todayRequests)
+})
 
 const toggleKeyVisibility = () => {
   showFullKey.value = !showFullKey.value
@@ -247,8 +259,8 @@ const toggleEnabled = async () => {
 
 .key-stats {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0.75rem;
   padding-top: 0.75rem;
   border-top: 1px solid var(--color-border);
 }

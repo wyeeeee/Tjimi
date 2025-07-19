@@ -65,6 +65,7 @@ pub fn run() {
             get_request_logs,
             get_request_logs_paginated,
             get_usage_stats,
+            get_api_key_today_requests,
             set_custom_auth_key,
             reset_custom_auth_key,
             clear_custom_auth_key,
@@ -77,7 +78,9 @@ pub fn run() {
             toggle_maximize_window,
             is_window_maximized,
             start_drag,
-            is_desktop
+            is_desktop,
+            get_retry_count,
+            set_retry_count
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

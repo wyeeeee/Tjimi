@@ -22,13 +22,18 @@ const props = defineProps({
   apiKeys: {
     type: Array,
     default: () => []
+  },
+  logsStats: {
+    type: Object,
+    default: () => ({})
   }
 })
 
 const stats = computed(() => {
   const total = props.apiKeys.length
   const active = props.apiKeys.filter(key => key.isActive).length
-  const totalRequests = props.apiKeys.reduce((sum, key) => sum + (key.usageCount || 0), 0)
+  const todayRequests = props.logsStats?.todayRequests || 0
+  const totalRequests = props.logsStats?.totalRequests || 0
   
   return [
     {
@@ -39,13 +44,19 @@ const stats = computed(() => {
     },
     {
       key: 'active',
-      label: '活跃',
+      label: '活跃密钥',
       value: active,
       icon: 'check'
     },
     {
-      key: 'requests',
-      label: '请求数',
+      key: 'today_requests',
+      label: '今日请求',
+      value: todayRequests > 999 ? `${Math.floor(todayRequests / 1000)}K` : todayRequests,
+      icon: 'logs'
+    },
+    {
+      key: 'total_requests',
+      label: '总请求数',
       value: totalRequests > 999 ? `${Math.floor(totalRequests / 1000)}K` : totalRequests,
       icon: 'trending-up'
     }
@@ -63,7 +74,7 @@ const stats = computed(() => {
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 0.75rem;
 }
 

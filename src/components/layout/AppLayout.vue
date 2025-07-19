@@ -83,21 +83,6 @@
 
     <!-- Main Content -->
     <main class="main-content">
-      <!-- Desktop Header -->
-      <header class="desktop-header" v-if="!isMobile">
-        <div class="desktop-header-content">
-          <div class="page-header">
-            <h1 class="page-title">{{ currentPageTitle }}</h1>
-            <p v-if="currentPageDescription" class="page-description">
-              {{ currentPageDescription }}
-            </p>
-          </div>
-          
-          <div class="header-actions">
-            <slot name="header-actions" />
-          </div>
-        </div>
-      </header>
 
       <!-- Page Content -->
       <div class="page-content">
@@ -147,30 +132,6 @@ const navigationItems = computed(() => [
     badge: authStore.isDefaultPassword ? '!' : null
   }
 ])
-
-// Page metadata
-const pageMetadata = {
-  '/api-keys': {
-    title: '控制面板',
-    description: '管理您的 Gemini API 密钥'
-  },
-  '/logs': {
-    title: '请求日志',
-    description: '查看 API 请求历史记录'
-  },
-  '/settings': {
-    title: '系统设置',
-    description: '配置系统参数和安全设置'
-  }
-}
-
-const currentPageTitle = computed(() => {
-  return pageMetadata[route.path]?.title || '未知页面'
-})
-
-const currentPageDescription = computed(() => {
-  return pageMetadata[route.path]?.description
-})
 
 const sidebarClasses = computed(() => [
   'sidebar',

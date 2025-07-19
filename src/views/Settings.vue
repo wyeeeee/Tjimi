@@ -5,16 +5,21 @@
       v-if="isMobile"
       :password-form="passwordForm"
       :custom-key-form="customKeyForm"
+      :retry-form="retryForm"
       :loading="authStore.loading"
       :custom-key-loading="customKeyLoading"
+      :retry-loading="retryLoading"
       :error="authStore.error"
       :success-message="successMessage"
       :custom-key-error="customKeyError"
       :custom-key-success="customKeySuccess"
+      :retry-error="retryError"
+      :retry-success="retrySuccess"
       :has-custom-key="hasCustomKey"
       @password-change="handlePasswordChange"
       @custom-key-submit="handleCustomKeySubmit"
       @clear-custom-key="handleClearCustomKey"
+      @retry-submit="handleRetrySettingsSubmit"
       @logout="handleLogout"
     />
 
@@ -169,6 +174,61 @@
           </div>
         </div>
       </div>
+
+      <div class="settings-section">
+        <div class="section-header">
+          <h2>🔄 错误重试设置</h2>
+          <p class="section-description">配置当API请求失败时的重试次数和行为</p>
+        </div>
+
+        <form @submit.prevent="handleRetrySettingsSubmit" class="retry-form">
+          <div class="form-group">
+            <label for="retryCount">重试次数</label>
+            <input
+              id="retryCount"
+              v-model.number="retryForm.count"
+              type="number"
+              min="1"
+              required
+              placeholder="输入重试次数"
+              class="form-input"
+              :disabled="retryLoading"
+            />
+            <small class="form-hint">
+              设置API请求失败时的重试次数 (最少1次，默认3次，可设置为无限次)
+            </small>
+          </div>
+
+          <div class="form-actions">
+            <button 
+              type="submit" 
+              :disabled="retryLoading || retryForm.count < 1"
+              class="btn-primary"
+            >
+              {{ retryLoading ? '保存中...' : '保存设置' }}
+            </button>
+          </div>
+
+          <div v-if="retryError" class="error-message">
+            {{ retryError }}
+          </div>
+
+          <div v-if="retrySuccess" class="success-message">
+            {{ retrySuccess }}
+          </div>
+        </form>
+
+        <div class="usage-info">
+          <h4>重试机制说明</h4>
+          <ul>
+            <li>当API密钥返回错误时，系统会自动切换到下一个可用密钥进行重试</li>
+            <li>支持流式和非流式请求的重试</li>
+            <li>重试间隔采用指数退避策略，避免过于频繁的请求</li>
+            <li>如果API密钥返回401或403错误，该密钥会被标记为失效</li>
+            <li>重试次数达到限制后，请求会返回最后一次的错误信息</li>
+          </ul>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -177,12 +237,14 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import { useSettingsStore } from '../stores/settings'
 import { useResponsive } from '@/composables/useResponsive'
 import { invoke } from '@tauri-apps/api/core'
 import MobileSettings from '@/components/mobile/MobileSettings.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const settingsStore = useSettingsStore()
 const { isMobile } = useResponsive()
 
 const passwordForm = ref({
@@ -201,6 +263,14 @@ const customKeyLoading = ref(false)
 const customKeyError = ref('')
 const customKeySuccess = ref('')
 const hasCustomKey = ref(false)
+
+// 重试设置相关
+const retryForm = ref({
+  count: 3
+})
+const retryLoading = ref(false)
+const retryError = ref('')
+const retrySuccess = ref('')
 
 const isPasswordFormValid = computed(() => {
   return passwordForm.value.currentPassword &&
@@ -294,8 +364,34 @@ const handleClearCustomKey = async () => {
   }
 }
 
+// 重试设置相关函数
+const loadRetrySettings = async () => {
+  try {
+    await settingsStore.getRetryCount()
+    retryForm.value.count = settingsStore.retryCount
+  } catch (error) {
+    console.error('加载重试设置失败:', error)
+  }
+}
+
+const handleRetrySettingsSubmit = async () => {
+  retryLoading.value = true
+  retryError.value = ''
+  retrySuccess.value = ''
+
+  try {
+    await settingsStore.setRetryCount(retryForm.value.count)
+    retrySuccess.value = '重试设置保存成功'
+  } catch (error) {
+    retryError.value = '保存失败: ' + error
+  } finally {
+    retryLoading.value = false
+  }
+}
+
 onMounted(() => {
   checkCustomKey()
+  loadRetrySettings()
 })
 </script>
 

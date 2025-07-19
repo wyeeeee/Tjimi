@@ -40,14 +40,18 @@ const props = defineProps({
   apiKeys: {
     type: Array,
     default: () => []
+  },
+  logsStats: {
+    type: Object,
+    default: () => ({})
   }
 })
 
 const stats = computed(() => {
   const total = props.apiKeys.length
   const active = props.apiKeys.filter(key => key.isActive).length
-  const todayRequests = props.apiKeys.reduce((sum, key) => sum + (key.usageCount || 0), 0)
-  const totalRequests = props.apiKeys.reduce((sum, key) => sum + (key.usageCount || 0), 0)
+  const todayRequests = props.logsStats?.todayRequests || 0
+  const totalRequests = props.logsStats?.totalRequests || 0
   
   return {
     total,
