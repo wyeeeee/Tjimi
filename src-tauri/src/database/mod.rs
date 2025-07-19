@@ -20,17 +20,17 @@ fn get_database_path() -> Result<PathBuf> {
     
     #[cfg(target_os = "android")]
     {
-        // Android: Use app's internal storage directory
-        if let Ok(data_dir) = std::env::var("ANDROID_DATA") {
-            let app_dir = PathBuf::from(data_dir).join("data").join("com.wye.tjimi").join("databases");
-            std::fs::create_dir_all(&app_dir)?;
-            Ok(app_dir.join("gemini_proxy.db"))
-        } else {
-            // Fallback: try to use files directory
-            let app_dir = PathBuf::from("/data/data/com.wye.tjimi/databases");
-            std::fs::create_dir_all(&app_dir).unwrap_or_default();
-            Ok(app_dir.join("gemini_proxy.db"))
+        // Android: Use cache directory which is always accessible for apps
+        // This is typically /data/data/com.wye.tjimi/cache/
+        let cache_dir = std::env::temp_dir(); // On Android, temp_dir() returns app's cache directory
+        let db_path = cache_dir.join("gemini_proxy.db");
+        
+        // Ensure the directory exists
+        if let Some(parent) = db_path.parent() {
+            std::fs::create_dir_all(parent).unwrap_or_default();
         }
+        
+        Ok(db_path)
     }
     
     #[cfg(not(any(target_os = "windows", target_os = "android")))]
