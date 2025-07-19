@@ -33,11 +33,11 @@ pub fn run() {
                         let server_pool = pool.clone();
                         tauri::async_runtime::spawn(async move {
                             let server_app = create_app(server_pool).await;
-                            let listener = tokio::net::TcpListener::bind("127.0.0.1:5675")
+                            let listener = tokio::net::TcpListener::bind("0.0.0.0:5675")
                                 .await
                                 .expect("Failed to bind to port 5675");
                             
-                            tracing::info!("Gemini proxy server listening on http://127.0.0.1:5675");
+                            tracing::info!("Gemini proxy server listening on http://0.0.0.0:5675");
                             
                             axum::serve(listener, server_app)
                                 .await
