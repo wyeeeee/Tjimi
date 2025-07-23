@@ -90,6 +90,23 @@ pub async fn run_migrations(pool: &SqlitePool) -> Result<()> {
     .execute(pool)
     .await.ok(); // 忽略错误，可能列已存在
 
+    // Add request_body and response_body columns to request_logs table
+    sqlx::query(
+        r#"
+        ALTER TABLE request_logs ADD COLUMN request_body TEXT;
+        "#,
+    )
+    .execute(pool)
+    .await.ok(); // 忽略错误，可能列已存在
+
+    sqlx::query(
+        r#"
+        ALTER TABLE request_logs ADD COLUMN response_body TEXT;
+        "#,
+    )
+    .execute(pool)
+    .await.ok(); // 忽略错误，可能列已存在
+
     // Initialize default custom auth key if not set
     use crate::services::CustomAuthService;
     let custom_auth_service = CustomAuthService::new(pool.clone());

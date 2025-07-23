@@ -55,6 +55,14 @@
                     </div>
                     <div class="log-response-time">{{ log.responseTimeMs }}ms</div>
                     <div class="log-api-key">{{ log.apiKeyName }}</div>
+                    <div class="log-actions">
+                      <button v-if="log.requestBody" @click="showRequestBody(log)" class="action-btn" title="查看请求内容">
+                        📤
+                      </button>
+                      <button v-if="log.responseBody" @click="showResponseBody(log)" class="action-btn" title="查看返回内容">
+                        📥
+                      </button>
+                    </div>
                   </div>
                   <div class="log-path">
                     <span class="path-text">{{ log.path }}</span>
@@ -86,11 +94,24 @@
         @per-page-change="handlePerPageChange"
       />
     </div>
+    
+    <!-- 内容查看弹窗 -->
+    <div v-if="showModal" class="modal-overlay" @click="closeModal">
+      <div class="modal" @click.stop>
+        <div class="modal-header">
+          <h3>{{ modalTitle }}</h3>
+          <button @click="closeModal" class="close-btn">&times;</button>
+        </div>
+        <div class="modal-content">
+          <pre>{{ modalContent }}</pre>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useLogsStore } from '../stores/logs'
 import { useResponsive } from '@/composables/useResponsive'
 import MobileLogs from '@/components/mobile/MobileLogs.vue'
@@ -98,6 +119,10 @@ import Pagination from '@/components/ui/Pagination.vue'
 
 const logsStore = useLogsStore()
 const { isMobile } = useResponsive()
+
+const showModal = ref(false)
+const modalTitle = ref('')
+const modalContent = ref('')
 
 const formatDate = (dateString) => {
   return new Date(dateString).toLocaleString('zh-CN')
@@ -127,6 +152,24 @@ const handlePageChange = (page) => {
 
 const handlePerPageChange = (perPage) => {
   logsStore.fetchLogsPaginated(1, perPage)
+}
+
+const showRequestBody = (log) => {
+  modalTitle.value = '请求内容'
+  modalContent.value = log.requestBody || ''
+  showModal.value = true
+}
+
+const showResponseBody = (log) => {
+  modalTitle.value = '返回内容'
+  modalContent.value = log.responseBody || ''
+  showModal.value = true
+}
+
+const closeModal = () => {
+  showModal.value = false
+  modalTitle.value = ''
+  modalContent.value = ''
 }
 
 onMounted(() => {
@@ -356,6 +399,33 @@ td {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.log-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-left: 1rem;
+}
+
+.action-btn {
+  background: none;
+  border: 1px solid var(--color-border);
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 32px;
+}
+
+.action-btn:hover {
+  background: var(--color-surface-hover);
+  border-color: var(--color-primary);
 }
 
 .log-path {
@@ -829,5 +899,89 @@ td {
   .status-badge {
     border: 1px solid currentColor;
   }
+}
+
+/* 弹窗样式 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 1rem;
+}
+
+.modal {
+  background: var(--color-surface);
+  border-radius: 0.5rem;
+  border: 1px solid var(--color-border);
+  max-width: 90vw;
+  max-height: 90vh;
+  width: 800px;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.25rem;
+  transition: all 0.2s;
+}
+
+.close-btn:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+}
+
+.modal-content {
+  padding: 1.5rem;
+  overflow: auto;
+  flex: 1;
+}
+
+.modal-content pre {
+  background: var(--color-surface-secondary);
+  padding: 1rem;
+  border-radius: 0.375rem;
+  border: 1px solid var(--color-border);
+  font-family: var(--font-mono, monospace);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--color-text);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  margin: 0;
+  max-height: 60vh;
+  overflow: auto;
 }
 </style>

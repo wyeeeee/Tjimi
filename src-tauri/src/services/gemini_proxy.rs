@@ -80,14 +80,29 @@ impl GeminiProxyService {
             let status_code = response.status().as_u16() as i32;
             let response_time = start_time.elapsed().as_millis() as i64;
 
-            // Log the request
-            self.log_request(api_key.id, method, path, status_code, response_time).await?;
+            // Initial log (will be updated later with body content)
 
             // Update API key usage
             self.api_key_service.increment_usage(api_key.id).await?;
 
             if response.status().is_success() {
-                let json_response: Value = response.json().await?;
+                let response_text = response.text().await?;
+                let json_response: Value = serde_json::from_str(&response_text)?;
+                
+                // Update log with request and response body
+                let request_body_str = if method != "GET" { Some(body.to_string()) } else { None };
+                if let Err(e) = self.log_request_with_body(
+                    api_key.id, 
+                    method, 
+                    path, 
+                    status_code, 
+                    response_time, 
+                    request_body_str.as_deref(), 
+                    Some(&response_text)
+                ).await {
+                    tracing::warn!("Failed to update log with body: {}", e);
+                }
+                
                 return Ok(json_response);
             } else {
                 // If the API key is invalid, mark it as failed
@@ -96,6 +111,20 @@ impl GeminiProxyService {
                 }
                 
                 let error_text = response.text().await?;
+                
+                // Update log with request and error response body
+                let request_body_str = if method != "GET" { Some(body.to_string()) } else { None };
+                if let Err(e) = self.log_request_with_body(
+                    api_key.id, 
+                    method, 
+                    path, 
+                    status_code, 
+                    response_time, 
+                    request_body_str.as_deref(), 
+                    Some(&error_text)
+                ).await {
+                    tracing::warn!("Failed to update log with body: {}", e);
+                }
                 
                 // If this is the last attempt, return the error
                 if attempt == retry_count - 1 {
@@ -161,9 +190,18 @@ impl GeminiProxyService {
                     tracing::warn!("Failed to increment API key usage: {}", e);
                 }
 
-                // Log successful streaming start
+                // Log successful streaming start with request body
                 let response_time = start_time.elapsed().as_millis() as i64;
-                if let Err(e) = self.log_request(api_key.id, method, path, status_code, response_time).await {
+                let request_body_str = if method != "GET" { Some(body.to_string()) } else { None };
+                if let Err(e) = self.log_request_with_body(
+                    api_key.id, 
+                    method, 
+                    path, 
+                    status_code, 
+                    response_time, 
+                    request_body_str.as_deref(), 
+                    Some("[Streaming Response]")
+                ).await {
                     tracing::warn!("Failed to log streaming request: {}", e);
                 }
 
@@ -185,8 +223,19 @@ impl GeminiProxyService {
             } else {
                 let response_time = start_time.elapsed().as_millis() as i64;
                 
-                // Log the failed request
-                if let Err(e) = self.log_request(api_key.id, method, path, status_code, response_time).await {
+                let error_text = response.text().await?;
+                
+                // Log the failed request with bodies
+                let request_body_str = if method != "GET" { Some(body.to_string()) } else { None };
+                if let Err(e) = self.log_request_with_body(
+                    api_key.id, 
+                    method, 
+                    path, 
+                    status_code, 
+                    response_time, 
+                    request_body_str.as_deref(), 
+                    Some(&error_text)
+                ).await {
                     tracing::warn!("Failed to log streaming request: {}", e);
                 }
                 
@@ -196,8 +245,6 @@ impl GeminiProxyService {
                         tracing::warn!("Failed to mark key as failed: {}", e);
                     }
                 }
-                
-                let error_text = response.text().await?;
                 
                 // If this is the last attempt, return the error
                 if attempt == retry_count - 1 {
@@ -217,13 +264,17 @@ impl GeminiProxyService {
     }
 
     async fn log_request(&self, api_key_id: Uuid, method: &str, path: &str, status_code: i32, response_time_ms: i64) -> Result<()> {
+        self.log_request_with_body(api_key_id, method, path, status_code, response_time_ms, None, None).await
+    }
+
+    async fn log_request_with_body(&self, api_key_id: Uuid, method: &str, path: &str, status_code: i32, response_time_ms: i64, request_body: Option<&str>, response_body: Option<&str>) -> Result<()> {
         let log_id = Uuid::new_v4();
         let now = Utc::now();
 
         sqlx::query(
             r#"
-            INSERT INTO request_logs (id, api_key_id, method, path, status_code, response_time_ms, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO request_logs (id, api_key_id, method, path, status_code, response_time_ms, request_body, response_body, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             "#,
         )
         .bind(log_id.to_string())
@@ -232,6 +283,8 @@ impl GeminiProxyService {
         .bind(path)
         .bind(status_code)
         .bind(response_time_ms)
+        .bind(request_body)
+        .bind(response_body)
         .bind(to_js_compatible_timestamp(now))
         .execute(&self.pool)
         .await?;

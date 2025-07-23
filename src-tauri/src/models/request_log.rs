@@ -10,6 +10,8 @@ pub struct RequestLog {
     pub path: String,
     pub status_code: i32,
     pub response_time_ms: i64,
+    pub request_body: Option<String>,
+    pub response_body: Option<String>,
     pub created_at: DateTime<Utc>,
 }
 
@@ -46,6 +48,8 @@ impl sqlx::FromRow<'_, sqlx::sqlite::SqliteRow> for RequestLog {
             path: row.try_get("path")?,
             status_code: row.try_get("status_code")?,
             response_time_ms: row.try_get("response_time_ms")?,
+            request_body: row.try_get("request_body").ok(),
+            response_body: row.try_get("response_body").ok(),
             created_at,
         })
     }
@@ -60,6 +64,8 @@ pub struct RequestLogResponse {
     pub path: String,
     pub status_code: i32,
     pub response_time_ms: i64,
+    pub request_body: Option<String>,
+    pub response_body: Option<String>,
     pub created_at: DateTime<Utc>,
 }
 
@@ -89,6 +95,8 @@ impl sqlx::FromRow<'_, sqlx::sqlite::SqliteRow> for RequestLogResponse {
             path: row.try_get("path")?,
             status_code: row.try_get("status_code")?,
             response_time_ms: row.try_get("response_time_ms")?,
+            request_body: row.try_get("request_body").ok(),
+            response_body: row.try_get("response_body").ok(),
             created_at,
         })
     }
