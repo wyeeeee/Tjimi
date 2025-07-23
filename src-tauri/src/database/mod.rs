@@ -1,6 +1,7 @@
 use sqlx::{SqlitePool, migrate::MigrateDatabase};
 use anyhow::Result;
 use std::path::PathBuf;
+use tauri::Manager;
 
 pub mod migrations;
 
