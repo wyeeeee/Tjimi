@@ -90,8 +90,22 @@ pub async fn generate_content(
         match proxy_service.forward_request("POST", &full_path, payload).await {
             Ok(response) => Ok(Json(response).into_response()),
             Err(e) => {
-                tracing::error!("Failed to generate content: {}", e);
-                Err(StatusCode::INTERNAL_SERVER_ERROR)
+                let error_msg = e.to_string();
+                tracing::error!("Failed to generate content: {}", error_msg);
+                
+                // Return 400 for validation errors, 500 for other errors
+                if error_msg.contains("Invalid request format") {
+                    let error_response = serde_json::json!({
+                        "error": {
+                            "code": "INVALID_ARGUMENT",
+                            "message": error_msg,
+                            "status": "INVALID_ARGUMENT"
+                        }
+                    });
+                    Ok((StatusCode::BAD_REQUEST, Json(error_response)).into_response())
+                } else {
+                    Err(StatusCode::INTERNAL_SERVER_ERROR)
+                }
             }
         }
     } else if path.ends_with(":streamGenerateContent") {
@@ -131,8 +145,15 @@ pub async fn generate_content(
                 Ok(response)
             }
             Err(e) => {
-                tracing::error!("Failed to stream generate content: {}", e);
-                Err(StatusCode::INTERNAL_SERVER_ERROR)
+                let error_msg = e.to_string();
+                tracing::error!("Failed to stream generate content: {}", error_msg);
+                
+                // Return 400 for validation errors, 500 for other errors
+                if error_msg.contains("Invalid request format") {
+                    Err(StatusCode::BAD_REQUEST)
+                } else {
+                    Err(StatusCode::INTERNAL_SERVER_ERROR)
+                }
             }
         }
     } else {
@@ -153,8 +174,22 @@ pub async fn generate_content_v1(
         match proxy_service.forward_request("POST", &full_path, payload).await {
             Ok(response) => Ok(Json(response).into_response()),
             Err(e) => {
-                tracing::error!("Failed to generate content: {}", e);
-                Err(StatusCode::INTERNAL_SERVER_ERROR)
+                let error_msg = e.to_string();
+                tracing::error!("Failed to generate content: {}", error_msg);
+                
+                // Return 400 for validation errors, 500 for other errors
+                if error_msg.contains("Invalid request format") {
+                    let error_response = serde_json::json!({
+                        "error": {
+                            "code": "INVALID_ARGUMENT",
+                            "message": error_msg,
+                            "status": "INVALID_ARGUMENT"
+                        }
+                    });
+                    Ok((StatusCode::BAD_REQUEST, Json(error_response)).into_response())
+                } else {
+                    Err(StatusCode::INTERNAL_SERVER_ERROR)
+                }
             }
         }
     } else if path.ends_with(":streamGenerateContent") {
@@ -194,8 +229,15 @@ pub async fn generate_content_v1(
                 Ok(response)
             }
             Err(e) => {
-                tracing::error!("Failed to stream generate content: {}", e);
-                Err(StatusCode::INTERNAL_SERVER_ERROR)
+                let error_msg = e.to_string();
+                tracing::error!("Failed to stream generate content: {}", error_msg);
+                
+                // Return 400 for validation errors, 500 for other errors
+                if error_msg.contains("Invalid request format") {
+                    Err(StatusCode::BAD_REQUEST)
+                } else {
+                    Err(StatusCode::INTERNAL_SERVER_ERROR)
+                }
             }
         }
     } else {

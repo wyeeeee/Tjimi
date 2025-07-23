@@ -43,6 +43,13 @@ impl GeminiProxyService {
     }
 
     pub async fn forward_request(&self, method: &str, path: &str, body: Value) -> Result<Value> {
+        // Validate request body for generateContent endpoints
+        if method == "POST" && (path.contains(":generateContent") || path.contains("generateContent")) {
+            if let Err(e) = self.validate_generate_content_request(&body) {
+                return Err(anyhow!("Invalid request format: {}", e));
+            }
+        }
+
         let retry_count = self.settings_service.get_retry_count().await.unwrap_or(3);
         
         for attempt in 0..retry_count {
@@ -108,6 +115,13 @@ impl GeminiProxyService {
     }
 
     pub async fn forward_streaming_request(&self, method: &str, path: &str, body: Value) -> Result<impl tokio_stream::Stream<Item = Result<Bytes>>> {
+        // Validate request body for streaming generateContent endpoints
+        if method == "POST" && (path.contains(":streamGenerateContent") || path.contains("streamGenerateContent")) {
+            if let Err(e) = self.validate_generate_content_request(&body) {
+                return Err(anyhow!("Invalid request format: {}", e));
+            }
+        }
+
         let retry_count = self.settings_service.get_retry_count().await.unwrap_or(3);
         
         for attempt in 0..retry_count {
@@ -221,6 +235,58 @@ impl GeminiProxyService {
         .bind(to_js_compatible_timestamp(now))
         .execute(&self.pool)
         .await?;
+
+        Ok(())
+    }
+
+    fn validate_generate_content_request(&self, body: &Value) -> Result<()> {
+        // Check if body is an object
+        let obj = body.as_object()
+            .ok_or_else(|| anyhow!("Request body must be a JSON object"))?;
+
+        // Check if contents field exists and is not null
+        let contents = obj.get("contents")
+            .ok_or_else(|| anyhow!("Missing required field 'contents'"))?;
+
+        // Check if contents is an array
+        let contents_array = contents.as_array()
+            .ok_or_else(|| anyhow!("Field 'contents' must be an array"))?;
+
+        // Check if contents array is not empty
+        if contents_array.is_empty() {
+            return Err(anyhow!("Field 'contents' cannot be empty"));
+        }
+
+        // Validate each content item has parts
+        for (index, content) in contents_array.iter().enumerate() {
+            let content_obj = content.as_object()
+                .ok_or_else(|| anyhow!("Content item {} must be an object", index))?;
+            
+            let parts = content_obj.get("parts")
+                .ok_or_else(|| anyhow!("Content item {} missing required field 'parts'", index))?;
+            
+            let parts_array = parts.as_array()
+                .ok_or_else(|| anyhow!("Field 'parts' in content item {} must be an array", index))?;
+            
+            if parts_array.is_empty() {
+                return Err(anyhow!("Field 'parts' in content item {} cannot be empty", index));
+            }
+
+            // Validate each part has at least one content field (text, inline_data, etc.)
+            for (part_index, part) in parts_array.iter().enumerate() {
+                let part_obj = part.as_object()
+                    .ok_or_else(|| anyhow!("Part {} in content item {} must be an object", part_index, index))?;
+                
+                let has_content = part_obj.contains_key("text") || 
+                                 part_obj.contains_key("inline_data") ||
+                                 part_obj.contains_key("function_call") ||
+                                 part_obj.contains_key("function_response");
+                
+                if !has_content {
+                    return Err(anyhow!("Part {} in content item {} must contain at least one content field (text, inline_data, function_call, or function_response)", part_index, index));
+                }
+            }
+        }
 
         Ok(())
     }
