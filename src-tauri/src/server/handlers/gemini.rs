@@ -4,9 +4,10 @@ use axum::{
     response::{Json, Response, Sse, IntoResponse},
     response::sse::Event,
 };
-use crate::services::GeminiProxyService;
+use crate::services::{GeminiProxyService, ErrorLoggerService};
 use serde_json::Value;
 use std::sync::Arc;
+use std::time::Instant;
 use sqlx::SqlitePool;
 use tokio_stream::StreamExt;
 
@@ -29,12 +30,25 @@ pub async fn api_info() -> Result<Json<Value>, StatusCode> {
 pub async fn list_models(
     State(pool): State<Arc<SqlitePool>>,
 ) -> Result<Json<Value>, StatusCode> {
+    let start_time = Instant::now();
     let proxy_service = GeminiProxyService::new(pool.as_ref().clone());
+    let error_logger = ErrorLoggerService::new(pool.as_ref().clone());
     
-    match proxy_service.forward_request("GET", "/v1beta/models", serde_json::json!({})).await {
+    match proxy_service.forward_request("GET", "/v1/models", serde_json::json!({})).await {
         Ok(response) => Ok(Json(response)),
         Err(e) => {
-            tracing::error!("Failed to list models: {}", e);
+            let error_msg = format!("Failed to list models: {}", e);
+            if let Err(log_err) = error_logger.log_handler_error(
+                None,
+                "GET",
+                "/v1/models",
+                &error_msg,
+                500,
+                Some(start_time),
+                None,
+            ).await {
+                tracing::warn!("Failed to log handler error: {}", log_err);
+            }
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }
@@ -44,13 +58,26 @@ pub async fn get_model(
     Path(model): Path<String>,
     State(pool): State<Arc<SqlitePool>>,
 ) -> Result<Json<Value>, StatusCode> {
+    let start_time = Instant::now();
     let proxy_service = GeminiProxyService::new(pool.as_ref().clone());
+    let error_logger = ErrorLoggerService::new(pool.as_ref().clone());
     let path = format!("/v1beta/models/{}", model);
     
     match proxy_service.forward_request("GET", &path, serde_json::json!({})).await {
         Ok(response) => Ok(Json(response)),
         Err(e) => {
-            tracing::error!("Failed to get model {}: {}", model, e);
+            let error_msg = format!("Failed to get model {}: {}", model, e);
+            if let Err(log_err) = error_logger.log_handler_error(
+                None,
+                "GET",
+                &path,
+                &error_msg,
+                500,
+                Some(start_time),
+                None,
+            ).await {
+                tracing::warn!("Failed to log handler error: {}", log_err);
+            }
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }
@@ -60,18 +87,44 @@ pub async fn get_model_by_path(
     Path(path): Path<String>,
     State(pool): State<Arc<SqlitePool>>,
 ) -> Result<Json<Value>, StatusCode> {
+    let start_time = Instant::now();
+    let error_logger = ErrorLoggerService::new(pool.as_ref().clone());
+    let full_path = format!("/v1beta/models/{}", path);
+    
     // 只处理单个模型名的路径，不处理带有 : 的路径
     if path.contains(':') {
+        let error_msg = format!("Invalid path format: {}", path);
+        if let Err(log_err) = error_logger.log_handler_error(
+            None,
+            "GET",
+            &full_path,
+            &error_msg,
+            404,
+            Some(start_time),
+            None,
+        ).await {
+            tracing::warn!("Failed to log handler error: {}", log_err);
+        }
         return Err(StatusCode::NOT_FOUND);
     }
     
     let proxy_service = GeminiProxyService::new(pool.as_ref().clone());
-    let full_path = format!("/v1beta/models/{}", path);
     
     match proxy_service.forward_request("GET", &full_path, serde_json::json!({})).await {
         Ok(response) => Ok(Json(response)),
         Err(e) => {
-            tracing::error!("Failed to get model {}: {}", path, e);
+            let error_msg = format!("Failed to get model {}: {}", path, e);
+            if let Err(log_err) = error_logger.log_handler_error(
+                None,
+                "GET",
+                &full_path,
+                &error_msg,
+                500,
+                Some(start_time),
+                None,
+            ).await {
+                tracing::warn!("Failed to log handler error: {}", log_err);
+            }
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }
@@ -82,7 +135,10 @@ pub async fn generate_content(
     State(pool): State<Arc<SqlitePool>>,
     Json(payload): Json<Value>,
 ) -> Result<Response, StatusCode> {
+    let start_time = Instant::now();
     let proxy_service = GeminiProxyService::new(pool.as_ref().clone());
+    let error_logger = ErrorLoggerService::new(pool.as_ref().clone());
+    let request_body = ErrorLoggerService::extract_request_body_string(&payload);
     
     // 处理 generateContent 和 streamGenerateContent 路径
     if path.ends_with(":generateContent") {
@@ -91,7 +147,6 @@ pub async fn generate_content(
             Ok(response) => Ok(Json(response).into_response()),
             Err(e) => {
                 let error_msg = e.to_string();
-                tracing::error!("Failed to generate content: {}", error_msg);
                 
                 // Return 400 for validation errors, 500 for other errors
                 if error_msg.contains("Invalid request format") {
@@ -102,8 +157,32 @@ pub async fn generate_content(
                             "status": "INVALID_ARGUMENT"
                         }
                     });
+                    
+                    if let Err(log_err) = error_logger.log_handler_error(
+                        None,
+                        "POST",
+                        &full_path,
+                        &error_msg,
+                        400,
+                        Some(start_time),
+                        Some(&request_body),
+                    ).await {
+                        tracing::warn!("Failed to log handler error: {}", log_err);
+                    }
+                    
                     Ok((StatusCode::BAD_REQUEST, Json(error_response)).into_response())
                 } else {
+                    if let Err(log_err) = error_logger.log_handler_error(
+                        None,
+                        "POST",
+                        &full_path,
+                        &error_msg,
+                        500,
+                        Some(start_time),
+                        Some(&request_body),
+                    ).await {
+                        tracing::warn!("Failed to log handler error: {}", log_err);
+                    }
                     Err(StatusCode::INTERNAL_SERVER_ERROR)
                 }
             }
@@ -146,17 +225,50 @@ pub async fn generate_content(
             }
             Err(e) => {
                 let error_msg = e.to_string();
-                tracing::error!("Failed to stream generate content: {}", error_msg);
                 
                 // Return 400 for validation errors, 500 for other errors
                 if error_msg.contains("Invalid request format") {
+                    if let Err(log_err) = error_logger.log_handler_error(
+                        None,
+                        "POST",
+                        &full_path,
+                        &error_msg,
+                        400,
+                        Some(start_time),
+                        Some(&request_body),
+                    ).await {
+                        tracing::warn!("Failed to log handler error: {}", log_err);
+                    }
                     Err(StatusCode::BAD_REQUEST)
                 } else {
+                    if let Err(log_err) = error_logger.log_handler_error(
+                        None,
+                        "POST",
+                        &full_path,
+                        &error_msg,
+                        500,
+                        Some(start_time),
+                        Some(&request_body),
+                    ).await {
+                        tracing::warn!("Failed to log handler error: {}", log_err);
+                    }
                     Err(StatusCode::INTERNAL_SERVER_ERROR)
                 }
             }
         }
     } else {
+        let error_msg = format!("Invalid endpoint path: {}", path);
+        if let Err(log_err) = error_logger.log_handler_error(
+            None,
+            "POST",
+            &path,
+            &error_msg,
+            404,
+            Some(start_time),
+            Some(&request_body),
+        ).await {
+            tracing::warn!("Failed to log handler error: {}", log_err);
+        }
         Err(StatusCode::NOT_FOUND)
     }
 }
@@ -166,7 +278,10 @@ pub async fn generate_content_v1(
     State(pool): State<Arc<SqlitePool>>,
     Json(payload): Json<Value>,
 ) -> Result<Response, StatusCode> {
+    let start_time = Instant::now();
     let proxy_service = GeminiProxyService::new(pool.as_ref().clone());
+    let error_logger = ErrorLoggerService::new(pool.as_ref().clone());
+    let request_body = ErrorLoggerService::extract_request_body_string(&payload);
     
     // 处理 generateContent 和 streamGenerateContent 路径，但使用 v1beta 转发
     if path.ends_with(":generateContent") {
@@ -175,7 +290,6 @@ pub async fn generate_content_v1(
             Ok(response) => Ok(Json(response).into_response()),
             Err(e) => {
                 let error_msg = e.to_string();
-                tracing::error!("Failed to generate content: {}", error_msg);
                 
                 // Return 400 for validation errors, 500 for other errors
                 if error_msg.contains("Invalid request format") {
@@ -186,8 +300,32 @@ pub async fn generate_content_v1(
                             "status": "INVALID_ARGUMENT"
                         }
                     });
+                    
+                    if let Err(log_err) = error_logger.log_handler_error(
+                        None,
+                        "POST",
+                        &full_path,
+                        &error_msg,
+                        400,
+                        Some(start_time),
+                        Some(&request_body),
+                    ).await {
+                        tracing::warn!("Failed to log handler error: {}", log_err);
+                    }
+                    
                     Ok((StatusCode::BAD_REQUEST, Json(error_response)).into_response())
                 } else {
+                    if let Err(log_err) = error_logger.log_handler_error(
+                        None,
+                        "POST",
+                        &full_path,
+                        &error_msg,
+                        500,
+                        Some(start_time),
+                        Some(&request_body),
+                    ).await {
+                        tracing::warn!("Failed to log handler error: {}", log_err);
+                    }
                     Err(StatusCode::INTERNAL_SERVER_ERROR)
                 }
             }
@@ -230,17 +368,50 @@ pub async fn generate_content_v1(
             }
             Err(e) => {
                 let error_msg = e.to_string();
-                tracing::error!("Failed to stream generate content: {}", error_msg);
                 
                 // Return 400 for validation errors, 500 for other errors
                 if error_msg.contains("Invalid request format") {
+                    if let Err(log_err) = error_logger.log_handler_error(
+                        None,
+                        "POST",
+                        &full_path,
+                        &error_msg,
+                        400,
+                        Some(start_time),
+                        Some(&request_body),
+                    ).await {
+                        tracing::warn!("Failed to log handler error: {}", log_err);
+                    }
                     Err(StatusCode::BAD_REQUEST)
                 } else {
+                    if let Err(log_err) = error_logger.log_handler_error(
+                        None,
+                        "POST",
+                        &full_path,
+                        &error_msg,
+                        500,
+                        Some(start_time),
+                        Some(&request_body),
+                    ).await {
+                        tracing::warn!("Failed to log handler error: {}", log_err);
+                    }
                     Err(StatusCode::INTERNAL_SERVER_ERROR)
                 }
             }
         }
     } else {
+        let error_msg = format!("Invalid endpoint path: {}", path);
+        if let Err(log_err) = error_logger.log_handler_error(
+            None,
+            "POST",
+            &path,
+            &error_msg,
+            404,
+            Some(start_time),
+            Some(&request_body),
+        ).await {
+            tracing::warn!("Failed to log handler error: {}", log_err);
+        }
         Err(StatusCode::NOT_FOUND)
     }
 }
@@ -249,18 +420,44 @@ pub async fn get_model_by_path_v1(
     Path(path): Path<String>,
     State(pool): State<Arc<SqlitePool>>,
 ) -> Result<Json<Value>, StatusCode> {
+    let start_time = Instant::now();
+    let error_logger = ErrorLoggerService::new(pool.as_ref().clone());
+    let full_path = format!("/v1beta/models/{}", path);
+    
     // 只处理单个模型名的路径，不处理带有 : 的路径
     if path.contains(':') {
+        let error_msg = format!("Invalid path format: {}", path);
+        if let Err(log_err) = error_logger.log_handler_error(
+            None,
+            "GET",
+            &full_path,
+            &error_msg,
+            404,
+            Some(start_time),
+            None,
+        ).await {
+            tracing::warn!("Failed to log handler error: {}", log_err);
+        }
         return Err(StatusCode::NOT_FOUND);
     }
     
     let proxy_service = GeminiProxyService::new(pool.as_ref().clone());
-    let full_path = format!("/v1beta/models/{}", path);
     
     match proxy_service.forward_request("GET", &full_path, serde_json::json!({})).await {
         Ok(response) => Ok(Json(response)),
         Err(e) => {
-            tracing::error!("Failed to get model {}: {}", path, e);
+            let error_msg = format!("Failed to get model {}: {}", path, e);
+            if let Err(log_err) = error_logger.log_handler_error(
+                None,
+                "GET",
+                &full_path,
+                &error_msg,
+                500,
+                Some(start_time),
+                None,
+            ).await {
+                tracing::warn!("Failed to log handler error: {}", log_err);
+            }
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }
