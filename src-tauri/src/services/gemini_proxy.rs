@@ -114,7 +114,7 @@ impl GeminiProxyService {
         Err(anyhow!("Request failed after all retry attempts"))
     }
 
-    pub async fn forward_streaming_request(&self, method: &str, path: &str, body: Value) -> Result<impl tokio_stream::Stream<Item = Result<Bytes>>> {
+    pub async fn forward_streaming_request(&self, method: &str, path: &str, body: Value) -> Result<impl tokio_stream::Stream<Item = Result<Bytes>> + use<>> {
         // Validate request body for streaming generateContent endpoints
         if method == "POST" && (path.contains(":streamGenerateContent") || path.contains("streamGenerateContent")) {
             if let Err(e) = self.validate_generate_content_request(&body) {
