@@ -4,7 +4,7 @@ mod database;
 mod commands;
 mod server;
 
-use database::init_database;
+use database::init_database_with_app_handle;
 use server::create_app;
 use commands::*;
 use services::CustomAuthService;
@@ -22,7 +22,7 @@ pub fn run() {
             
             // Initialize database synchronously in setup
             tauri::async_runtime::block_on(async move {
-                match init_database().await {
+                match init_database_with_app_handle(&app_handle).await {
                     Ok(pool) => {
                         tracing::info!("Database initialized successfully");
                         // Manage the pool and services in the app state
