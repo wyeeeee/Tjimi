@@ -38,6 +38,8 @@ pub async fn get_request_logs(
             rl.path,
             rl.status_code,
             rl.response_time_ms,
+            rl.request_body,
+            rl.response_body,
             rl.created_at
         FROM request_logs rl
         JOIN api_keys ak ON rl.api_key_id = ak.id
@@ -241,6 +243,8 @@ pub async fn get_request_logs_paginated(
             rl.path,
             rl.status_code,
             rl.response_time_ms,
+            rl.request_body,
+            rl.response_body,
             rl.created_at
         FROM request_logs rl
         JOIN api_keys ak ON rl.api_key_id = ak.id
