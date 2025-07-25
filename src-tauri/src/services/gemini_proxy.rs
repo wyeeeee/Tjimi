@@ -15,7 +15,6 @@ fn to_js_compatible_timestamp(dt: chrono::DateTime<Utc>) -> String {
 }
 
 pub struct GeminiProxyService {
-    client: Client,
     key_rotation: KeyRotationService,
     api_key_service: ApiKeyService,
     settings_service: SettingsService,
@@ -24,22 +23,62 @@ pub struct GeminiProxyService {
 
 impl GeminiProxyService {
     pub fn new(pool: SqlitePool) -> Self {
-        let client = Client::builder()
-            .timeout(std::time::Duration::from_secs(60))
-            .build()
-            .expect("Failed to create HTTP client");
-
         let key_rotation = KeyRotationService::new(pool.clone());
         let api_key_service = ApiKeyService::new(pool.clone());
         let settings_service = SettingsService::new(pool.clone());
 
         Self {
-            client,
             key_rotation,
             api_key_service,
             settings_service,
             pool,
         }
+    }
+
+    // 动态创建HTTP客户端，根据当前代理设置
+    async fn create_client(&self) -> Result<Client> {
+        let proxy_settings = self.settings_service.get_proxy_settings().await?;
+        
+        // 添加调试日志
+        tracing::info!("代理设置状态: enabled={}, type={}, host={:?}, port={:?}", 
+                      proxy_settings.enabled, 
+                      proxy_settings.proxy_type, 
+                      proxy_settings.host, 
+                      proxy_settings.port);
+        
+        let mut client_builder = Client::builder()
+            .timeout(std::time::Duration::from_secs(60));
+
+        // 如果启用了代理，则配置代理
+        if proxy_settings.enabled {
+            if let (Some(host), Some(port)) = (&proxy_settings.host, proxy_settings.port) {
+                let proxy_url = format!("{}://{}:{}", proxy_settings.proxy_type, host, port);
+                tracing::info!("应用代理配置: {}", proxy_url);
+                
+                let proxy = match proxy_settings.proxy_type.as_str() {
+                    "http" => reqwest::Proxy::http(&proxy_url)?,
+                    "https" => reqwest::Proxy::https(&proxy_url)?,
+                    "socks4" | "socks5" => reqwest::Proxy::all(&proxy_url)?,
+                    _ => reqwest::Proxy::http(&proxy_url)?,
+                };
+
+                // 如果有认证信息，添加认证
+                let proxy = if let (Some(username), Some(password)) = (&proxy_settings.username, &proxy_settings.password) {
+                    proxy.basic_auth(username, password)
+                } else {
+                    proxy
+                };
+
+                client_builder = client_builder.proxy(proxy);
+            } else {
+                tracing::warn!("代理已启用但主机或端口为空");
+            }
+        } else {
+            tracing::info!("代理已禁用，使用直连");
+        }
+
+        client_builder.build()
+            .map_err(|e| anyhow!("Failed to create HTTP client: {}", e))
     }
 
     pub async fn forward_request(&self, method: &str, path: &str, body: Value) -> Result<Value> {
@@ -62,11 +101,14 @@ impl GeminiProxyService {
             let converted_path = path.replace("/v1/", "/v1beta/");
             let gemini_url = format!("https://generativelanguage.googleapis.com{}?key={}", converted_path, api_key.key_value);
             
+            // 创建一次客户端，应用当前代理设置
+            let client = self.create_client().await?;
+            
             let mut request = match method {
-                "GET" => self.client.get(&gemini_url),
-                "POST" => self.client.post(&gemini_url),
-                "PUT" => self.client.put(&gemini_url),
-                "DELETE" => self.client.delete(&gemini_url),
+                "GET" => client.get(&gemini_url),
+                "POST" => client.post(&gemini_url),
+                "PUT" => client.put(&gemini_url),
+                "DELETE" => client.delete(&gemini_url),
                 _ => return Err(anyhow!("Unsupported HTTP method: {}", method)),
             };
 
@@ -164,9 +206,12 @@ impl GeminiProxyService {
             
             tracing::info!("Starting streaming request (attempt {}/{}): {}", attempt + 1, retry_count, &gemini_url[..100]);
             
+            // 创建一次客户端，应用当前代理设置
+            let client = self.create_client().await?;
+            
             let mut request = match method {
-                "GET" => self.client.get(&gemini_url),
-                "POST" => self.client.post(&gemini_url),
+                "GET" => client.get(&gemini_url),
+                "POST" => client.post(&gemini_url),
                 _ => return Err(anyhow!("Unsupported HTTP method for streaming: {}", method)),
             };
 

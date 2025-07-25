@@ -531,7 +531,19 @@ const handleRetrySettingsSubmit = async () => {
     proxySuccess.value = ''
 
     try {
-      await settingsStore.setProxySettings(settingsStore.proxySettings)
+      // 传递一个干净的对象，避免响应式属性干扰
+      const cleanSettings = {
+        enabled: settingsStore.proxySettings.enabled,
+        proxy_type: settingsStore.proxySettings.proxy_type,
+        host: settingsStore.proxySettings.host,
+        port: settingsStore.proxySettings.port,
+        username: settingsStore.proxySettings.username,
+        password: settingsStore.proxySettings.password
+      }
+      
+      await settingsStore.setProxySettings(cleanSettings)
+      // 保存成功后重新加载设置，确保前后端同步
+      await settingsStore.getProxySettings()
       proxySuccess.value = '代理设置保存成功'
     } catch (error) {
       proxyError.value = '保存失败: ' + error
