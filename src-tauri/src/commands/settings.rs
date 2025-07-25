@@ -1,4 +1,4 @@
-use crate::services::SettingsService;
+use crate::services::{SettingsService, settings::ProxySettings};
 use tauri::State;
 use sqlx::SqlitePool;
 
@@ -13,5 +13,19 @@ pub async fn get_retry_count(pool: State<'_, SqlitePool>) -> Result<i32, String>
 pub async fn set_retry_count(retry_count: i32, pool: State<'_, SqlitePool>) -> Result<(), String> {
     let settings_service = SettingsService::new(pool.inner().clone());
     settings_service.set_retry_count(retry_count).await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn get_proxy_settings(pool: State<'_, SqlitePool>) -> Result<ProxySettings, String> {
+    let settings_service = SettingsService::new(pool.inner().clone());
+    settings_service.get_proxy_settings().await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn set_proxy_settings(settings: ProxySettings, pool: State<'_, SqlitePool>) -> Result<(), String> {
+    let settings_service = SettingsService::new(pool.inner().clone());
+    settings_service.set_proxy_settings(&settings).await
         .map_err(|e| e.to_string())
 }

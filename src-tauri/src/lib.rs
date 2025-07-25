@@ -80,7 +80,9 @@ pub fn run() {
             start_drag,
             is_desktop,
             get_retry_count,
-            set_retry_count
+            set_retry_count,
+            get_proxy_settings,
+            set_proxy_settings
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

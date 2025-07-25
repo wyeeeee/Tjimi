@@ -229,6 +229,128 @@
           </ul>
         </div>
       </div>
+
+      <div class="settings-section">
+        <div class="section-header">
+          <h2>🌐 代理设置</h2>
+          <p class="section-description">配置 HTTP/SOCKS4/SOCKS5 代理服务器用于API请求</p>
+        </div>
+
+        <form @submit.prevent="handleProxySettingsSubmit" class="proxy-form">
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input
+                v-model="settingsStore.proxySettings.enabled"
+                type="checkbox"
+                class="form-checkbox"
+                :disabled="proxyLoading"
+              />
+              <span>启用代理</span>
+            </label>
+          </div>
+
+          <div v-if="settingsStore.proxySettings.enabled" class="proxy-config">
+            <div class="form-group">
+              <label for="proxyType">代理类型</label>
+              <select
+                id="proxyType"
+                v-model="settingsStore.proxySettings.proxy_type"
+                class="form-input"
+                :disabled="proxyLoading"
+              >
+                <option value="http">HTTP</option>
+                <option value="socks4">SOCKS4</option>
+                <option value="socks5">SOCKS5</option>
+              </select>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="proxyHost">主机地址</label>
+                <input
+                  id="proxyHost"
+                  v-model="settingsStore.proxySettings.host"
+                  type="text"
+                  placeholder="例如: 127.0.0.1"
+                  class="form-input"
+                  :disabled="proxyLoading"
+                  required
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="proxyPort">端口</label>
+                <input
+                  id="proxyPort"
+                  v-model.number="settingsStore.proxySettings.port"
+                  type="number"
+                  placeholder="例如: 1080"
+                  class="form-input"
+                  :disabled="proxyLoading"
+                  min="1"
+                  max="65535"
+                  required
+                />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="proxyUsername">用户名 (可选)</label>
+                <input
+                  id="proxyUsername"
+                  v-model="settingsStore.proxySettings.username"
+                  type="text"
+                  placeholder="代理用户名"
+                  class="form-input"
+                  :disabled="proxyLoading"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="proxyPassword">密码 (可选)</label>
+                <input
+                  id="proxyPassword"
+                  v-model="settingsStore.proxySettings.password"
+                  type="password"
+                  placeholder="代理密码"
+                  class="form-input"
+                  :disabled="proxyLoading"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button 
+              type="submit" 
+              :disabled="proxyLoading || (settingsStore.proxySettings.enabled && (!settingsStore.proxySettings.host || !settingsStore.proxySettings.port))"
+              class="btn-primary"
+            >
+              {{ proxyLoading ? '保存中...' : '保存设置' }}
+            </button>
+          </div>
+
+          <div v-if="proxyError" class="error-message">
+            {{ proxyError }}
+          </div>
+
+          <div v-if="proxySuccess" class="success-message">
+            {{ proxySuccess }}
+          </div>
+        </form>
+
+        <div class="usage-info">
+          <h4>代理设置说明</h4>
+          <ul>
+            <li>启用后，所有API请求将通过配置的代理服务器发送</li>
+            <li>支持 HTTP、SOCKS4 和 SOCKS5 代理协议</li>
+            <li>如果代理服务器需要认证，请填写用户名和密码</li>
+            <li>请确保代理服务器地址和端口配置正确</li>
+            <li>代理设置仅影响API请求，不会影响应用本身的网络连接</li>
+          </ul>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -271,6 +393,11 @@ const retryForm = ref({
 const retryLoading = ref(false)
 const retryError = ref('')
 const retrySuccess = ref('')
+
+  // 代理设置相关
+  const proxyLoading = ref(false)
+  const proxyError = ref('')
+  const proxySuccess = ref('')
 
 const isPasswordFormValid = computed(() => {
   return passwordForm.value.currentPassword &&
@@ -389,9 +516,34 @@ const handleRetrySettingsSubmit = async () => {
   }
 }
 
+  // 代理设置相关函数
+  const loadProxySettings = async () => {
+    try {
+      await settingsStore.getProxySettings()
+    } catch (error) {
+      console.error('加载代理设置失败:', error)
+    }
+  }
+
+  const handleProxySettingsSubmit = async () => {
+    proxyLoading.value = true
+    proxyError.value = ''
+    proxySuccess.value = ''
+
+    try {
+      await settingsStore.setProxySettings(settingsStore.proxySettings)
+      proxySuccess.value = '代理设置保存成功'
+    } catch (error) {
+      proxyError.value = '保存失败: ' + error
+    } finally {
+      proxyLoading.value = false
+    }
+  }
+
 onMounted(() => {
   checkCustomKey()
   loadRetrySettings()
+  loadProxySettings()
 })
 </script>
 
@@ -695,26 +847,66 @@ onMounted(() => {
   margin: 0;
 }
 
-.danger-zone-description {
-  color: var(--color-text-secondary);
-  margin-bottom: 1rem;
-}
+  .danger-zone-description {
+    color: var(--color-text-secondary);
+    margin-bottom: 1rem;
+  }
 
-@media (max-width: 768px) {
-  .settings {
+  .checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    font-weight: 500;
+    color: var(--color-text);
+  }
+
+  .form-checkbox {
+    width: 1.125rem;
+    height: 1.125rem;
+    border: 1px solid var(--color-border);
+    border-radius: 0.25rem;
+    cursor: pointer;
+  }
+
+  .form-checkbox:checked {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+  }
+
+  .proxy-config {
+    margin-top: 1rem;
     padding: 1rem;
+    background: var(--color-surface-secondary);
+    border-radius: 0.5rem;
+    border: 1px solid var(--color-border);
   }
-  
-  .settings-section {
-    padding: 1rem;
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
   }
-  
-  .form-actions {
-    flex-direction: column;
+
+  @media (max-width: 768px) {
+    .settings {
+      padding: 1rem;
+    }
+    
+    .settings-section {
+      padding: 1rem;
+    }
+    
+    .form-actions {
+      flex-direction: column;
+    }
+    
+    .form-row {
+      grid-template-columns: 1fr;
+    }
+    
+    .info-grid {
+      grid-template-columns: 1fr;
+    }
   }
-  
-  .info-grid {
-    grid-template-columns: 1fr;
-  }
-}
 </style>
